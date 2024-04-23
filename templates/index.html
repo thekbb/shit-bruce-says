@@ -28,9 +28,7 @@
             <blockquote id="quote_{{ quote.quote_id }}">
                 <p>{{ quote.get('quote') }}</p>
             </blockquote>
-            {% if quote.timestamp %}
             <p class="timestamp" onclick="window.location.href='{{ quote.timestamp_link }}'">{{ quote.timestamp.strftime("%B %d, %Y %H:%M:%S") }}</p>
-            {% endif %}
         </div>
         {% endfor %}
     </div>

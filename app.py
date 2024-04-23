@@ -21,7 +21,7 @@ table = dynamodb.Table(table_name)
 def index():
     # Retrieve all quotes from DynamoDB
     response = table.scan()
-    quotes = response.get('Items', [])
+    quotes = sorted(response.get('Items', []), key=lambda x: x.get('quote_id', 0), reverse=True)
 
     # Convert timestamp strings to datetime objects
     for quote in quotes:
