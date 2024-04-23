@@ -21,14 +21,16 @@
             <input type="submit" name="submit"/>
         </form>
     </div>
-    <div class="quotes">
+    <div class="quotes" id="quotes">
         {% for quote in quotes %}
-        <div class="quote">
+        <div class="quote" id="quote_{{ quote.quote_id }}">
             <h2>Bruce Said:</h2>
-            <blockquote id="quote_{{ quote.quote_id }}">
+            <blockquote>
                 <p>{{ quote.get('quote') }}</p>
             </blockquote>
-            <p class="timestamp" onclick="window.location.href='{{ quote.timestamp_link }}'">{{ quote.timestamp.strftime("%B %d, %Y %H:%M:%S") }}</p>
+            <p class="timestamp">
+                <a href="#{{ quote.quote_id }}"> {{ quote.timestamp.strftime("%B %d, %Y %H:%M:%S") }}</a>
+            </p>
         </div>
         {% endfor %}
     </div>
