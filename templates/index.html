@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style type="text/css">
+        body { font-family: arial, sans-serif; text-align: center;}
+        #wrapper { width: 400px; margin: auto;}
+        blockquote { border-left: #bbb 1px solid; border-right: #bbb 1px solid; padding: .5em; width: 300px; background-color: #f7f7f7; font-weight: bold; text-align: left }
+        h2 { margin: 0; padding: 0; text-align: left; font-size: 1.1em;}
+        .form { width: 300px; margin: 0 auto 1em auto; padding: 1em .5em; border: solid 1px #bbb; background-color: #f4f4f4}
+        .copy-button { background-color: #D3D3D3;
+                      border: none;
+                      color: white;
+                      padding: 8px 12px;
+                      text-align: center;
+                      text-decoration: none;
+                      display: inline-block;
+                      font-size: 14px;
+                      margin: 4px 2px;
+                      cursor: pointer;
+                      border-radius: 4px;
+                      }
+    </style>
+    <title>Shit Bruce says</title>
+</head>
+<body>
+<div id="wrapper">
+    <h1>Shit Bruce Says</h1>
+    <div class="form">
+        <form action="/add_quote" method="post">
+            <input type="text" name="quote" id="quote"/>
+            <input type="submit" name="submit"/>
+        </form>
+    </div>
+    <div class="quotes">
+        {% for quote in quotes %}
+        <h2>Bruce Said:</h2>
+        <blockquote id="quote_{{ quote.quote_id }}">
+            <p>{{ quote.get('quote') }}</p>
+            <button class="copy-button" onclick="copyToClipboard('quote_{{ quote.quote_id }}')">Copy Link</button>
+        </blockquote>
+        {% if quote.timestamp %}
+        <p>{{ quote.timestamp.strftime("%B %d, %Y %H:%M:%S") }}</p>
+        {% endif %}
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+    function copyToClipboard(elementId) {
+        var copyText = document.getElementById(elementId);
+        var textArea = document.createElement("textarea");
+        textArea.value = window.location.href.split('#')[0] + '#' + elementId;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textArea);
+        alert("Link copied to clipboard!");
+    }
+</script>
+
+</body>
+</html>
