@@ -16,6 +16,9 @@ table_name = 'bruce-quotes'  # Update with your DynamoDB table name
 # Get reference to DynamoDB table
 table = dynamodb.Table(table_name)
 
+# Max input length constant
+MAX_INPUT_LENGTH = 1024
+
 # Route to display form for entering quotes
 @app.route('/')
 def index():
@@ -34,6 +37,11 @@ def index():
 @app.route('/add_quote', methods=['POST'])
 def add_quote():
     quote = request.form['quote']
+
+    # Validate input length
+    if len(quote) > MAX_INPUT_LENGTH:
+        return f"Input length exceeds maximum limit of {MAX_INPUT_LENGTH} characters.", 400
+
     quote_id = int(datetime.datetime.now().timestamp())
     timestamp = str(datetime.datetime.now())
 
