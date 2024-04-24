@@ -10,11 +10,10 @@ dynamodb = boto3.resource('dynamodb', region_name='us-east-2')
 table_name = 'bruce-quotes'
 table = dynamodb.Table(table_name)
 
-MAX_INPUT_LENGTH = 500
+MAX_INPUT_LENGTH = 300
 
 @application.route('/')
 def index():
-    # Retrieve all quotes from DynamoDB
     response = table.scan()
     quotes = sorted(response.get('Items', []), key=lambda x: x.get('quote_id', 0), reverse=True)
     for quote in quotes:
