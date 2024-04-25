@@ -11,7 +11,7 @@
         .timestamp { color: #D3D3D3; cursor: pointer; }
         input[type="text"] { width: 80%; }
     </style>
-    <title>Shit Bruce says</title>
+    <title>Shit Bruce Says</title>
 </head>
 <body>
 <div id="wrapper">
@@ -24,7 +24,7 @@
     </div>
     <div class="quotes" id="quotes">
         {% for quote in quotes %}
-        <div class="quote" id="quote_{{ quote.quote_id }}">
+        <div class="quote" id="{{ quote.quote_id }}">
             <h2>Bruce Said:</h2>
             <blockquote>
                 <p>{{ quote.get('quote') }}</p>
