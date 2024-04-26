@@ -30,3 +30,11 @@ Run the app
 ```shell
 python app.py
 ```
+
+## Running in Docker
+```shell
+docker build -t shitbrucesays .
+docker run -it --rm -p 8080:5000 shitbrucesays
+```
+
+View the site on http://localhost:8080 on the host machine.
