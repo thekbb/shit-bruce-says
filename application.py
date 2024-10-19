@@ -37,8 +37,9 @@ def add_quote():
     quote = request.form['quote']
     quote_length = len(quote)
 
-    sql_keywords = ['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'DROP', 'FROM', 'WHERE', 'UNION', '--', ';', '/*', '*/', '@@', '@', 'EXEC', 'XP_']
-    sql_pattern = re.compile('|'.join(sql_keywords))
+    sql_keywords = ['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'DROP', 'FROM', 'WHERE', 'UNION', '--', ';', r'/\*', r'\*/', '@@', '@', 'EXEC', 'XP_']
+    escaped_keywords = [re.escape(keyword) for keyword in sql_keywords]
+    sql_pattern = re.compile('|'.join(escaped_keywords))
 
     if sql_pattern.search(quote):
         abort(400, description="Input contains potentially harmful SQL-like content.")
