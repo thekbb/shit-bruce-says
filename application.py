@@ -42,7 +42,7 @@ def add_quote():
     sql_pattern = re.compile('|'.join(escaped_keywords))
 
     if sql_pattern.search(quote):
-        abort(400, description="Input contains potentially harmful SQL-like content.")
+        abort(400, description="Input contains SQL-like content, there is no SQL here. Go away.")
 
     if not (MIN_INPUT_LENGTH <= quote_length <= MAX_INPUT_LENGTH):
         abort(400, description=f"Quote length must be between {MIN_INPUT_LENGTH} and {MAX_INPUT_LENGTH} characters.")
