@@ -1,10 +1,12 @@
 from flask import Flask, render_template, request, redirect, url_for, abort
 import boto3
 import datetime
+import re
 
 application = Flask(__name__)
 
 MAX_INPUT_LENGTH = 300
+MIN_INPUT_LENGTH = 5
 
 def init_dynamodb_table():
     dynamodb = boto3.resource('dynamodb', region_name='us-east-2')
@@ -33,8 +35,17 @@ def index():
 @application.route('/add_quote', methods=['POST'])
 def add_quote():
     quote = request.form['quote']
-    if len(quote) > MAX_INPUT_LENGTH:
-        abort(400, description=f"Input length exceeds maximum limit of {MAX_INPUT_LENGTH} characters.")
+    quote_length = len(quote)
+
+    sql_keywords = ['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'DROP', 'FROM', 'WHERE', 'UNION', '--', ';', '/*', '*/', '@@', '@', 'EXEC', 'XP_']
+    sql_pattern = re.compile('|'.join(sql_keywords))
+
+    if sql_pattern.search(quote):
+        abort(400, description="Input contains potentially harmful SQL-like content.")
+
+    if not (MIN_INPUT_LENGTH <= quote_length <= MAX_INPUT_LENGTH):
+        abort(400, description=f"Quote length must be between {MIN_INPUT_LENGTH} and {MAX_INPUT_LENGTH} characters.")
+
     add_quote_to_table(quote, table)
     return redirect(url_for('index'))
 
