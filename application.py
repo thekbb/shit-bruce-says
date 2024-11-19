@@ -37,7 +37,24 @@ def add_quote():
     quote = request.form['quote']
     quote_length = len(quote)
 
-    sql_keywords = ['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'DROP', 'FROM', 'WHERE', 'UNION', '--', ';', r'/\*', r'\*/', '@@', '@', 'EXEC', 'XP_']
+    sql_keywords = [
+        '@',
+        '@@',
+        '--',
+        ';',
+        'DELETE',
+        'DROP',
+        'EXEC',
+        'FROM',
+        'INSERT',
+        r'/\*',
+        r'\*/',
+        'SELECT',
+        'UNION',
+        'UPDATE',
+        'WHERE',
+        'XP_',
+    ]
     escaped_keywords = [re.escape(keyword) for keyword in sql_keywords]
     sql_pattern = re.compile('|'.join(escaped_keywords))
 
