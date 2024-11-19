@@ -17,7 +17,7 @@ table = init_dynamodb_table()
 
 def convert_timestamp(quote):
     if 'timestamp' in quote:
-        quote['timestamp'] = datetime.datetime.strptime(quote['timestamp'], '%Y-%m-%d %H:%M:%S.%f')
+        quote['timestamp'] = datetime.datetime.fromisoformat(quote['timestamp'])
     return quote
 
 def add_quote_to_table(quote, table):
