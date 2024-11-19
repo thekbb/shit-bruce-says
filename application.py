@@ -30,7 +30,7 @@ def index():
     response = table.scan()
     quotes = sorted(response.get('Items', []), key=lambda x: x.get('quote_id', 0), reverse=True)
     quotes = [convert_timestamp(quote) for quote in quotes]
-    return render_template('index.html', quotes=quotes)
+    return render_template('index.html', quotes=quotes, MAX_INPUT_LENGTH=MAX_INPUT_LENGTH, MIN_INPUT_LENGTH=MIN_INPUT_LENGTH)
 
 @application.route('/add_quote', methods=['POST'])
 def add_quote():

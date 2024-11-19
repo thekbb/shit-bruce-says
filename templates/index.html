@@ -1,7 +1,7 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <style type="text/css">
+    <style>
         body { font-family: arial, sans-serif; text-align: center;}
         #wrapper { width: 700px; margin: auto;}
         blockquote { border-left: #bbb 1px solid; border-right: #bbb 1px solid; padding: .5em; width: 600px; background-color: #f7f7f7; font-weight: bold; text-align: left }
@@ -18,7 +18,7 @@
     <h1>Shit Bruce Says</h1>
     <div class="form">
         <form action="/add_quote" method="post">
-            <input type="text" name="quote" id="quote"/>
+            <input type="text" id="quote" name="quote" maxlength="{{ MAX_INPUT_LENGTH }}" minlength="{{ MIN_INPUT_LENGTH }}" required/>
             <input type="submit" name="submit"/>
         </form>
     </div>
