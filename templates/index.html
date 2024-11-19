@@ -27,7 +27,7 @@
         <div class="quote" id="{{ quote.quote_id }}">
             <h2>Bruce Said:</h2>
             <blockquote>
-                <p>{{ quote.get('quote') }}</p>
+                <p>{{ quote.get('quote') | escape }}</p>
             </blockquote>
             <p class="timestamp">
                 <a href="#{{ quote.quote_id }}"> {{ quote.timestamp.strftime("%B %d, %Y %H:%M:%S") }}</a>
