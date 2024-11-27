@@ -38,27 +38,27 @@ def add_quote():
     quote_length = len(quote)
 
     sql_keywords = [
-        '@',
-        '@@',
         '--',
         ';',
+        '@',
+        '@@',
         'DELETE',
         'DROP',
         'ELT',
         'EXEC',
         'FROM',
         'INSERT',
-        'iqen',
         'ORDER BY',
-        r'\(\(|\)\)',
-        r'/\*',
-        r'\*/',
         'SELECT',
         'UNION',
         'UPDATE',
         'WHEN',
         'WHERE',
         'XP_',
+        'iqen',
+        r'/\*',
+        r'\(\(|\)\)',
+        r'\*/',
     ]
     escaped_keywords = [re.escape(keyword) for keyword in sql_keywords]
     sql_pattern = re.compile('|'.join(escaped_keywords))
