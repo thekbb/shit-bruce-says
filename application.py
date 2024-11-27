@@ -32,11 +32,7 @@ def index():
     quotes = [convert_timestamp(quote) for quote in quotes]
     return render_template('index.html', quotes=quotes, MAX_INPUT_LENGTH=MAX_INPUT_LENGTH, MIN_INPUT_LENGTH=MIN_INPUT_LENGTH)
 
-@application.route('/add_quote', methods=['POST'])
-def add_quote():
-    quote = request.form['quote']
-    quote_length = len(quote)
-
+def compile_sql_pattern():
     sql_keywords = [
         '--',
         ';',
@@ -61,7 +57,14 @@ def add_quote():
         r'\*/',
     ]
     escaped_keywords = [re.escape(keyword) for keyword in sql_keywords]
-    sql_pattern = re.compile('|'.join(escaped_keywords))
+    return re.compile('|'.join(escaped_keywords))
+
+@application.route('/add_quote', methods=['POST'])
+def add_quote():
+    quote = request.form['quote']
+    quote_length = len(quote)
+
+    sql_pattern = compile_sql_pattern()
 
     if sql_pattern.search(quote):
         abort(400, description="Input contains SQL-like content, there is no SQL here. Go away.")
