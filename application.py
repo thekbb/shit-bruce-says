@@ -53,7 +53,8 @@ def compile_sql_pattern():
         'XP_',
         'iqen',
         r'/\*',
-        r"\({2,}|\){2,}",
+        r"\({2,}",
+        r"\){2,}",
         r'\*/',
     ]
     escaped_keywords = [re.escape(keyword) if not keyword.startswith('r') else keyword for keyword in sql_keywords]
