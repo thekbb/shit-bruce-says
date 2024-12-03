@@ -53,10 +53,10 @@ def compile_sql_pattern():
         'XP_',
         'iqen',
         r'/\*',
-        r'\(\(|\)\)',
+        r"\({2,}|\){2,}",
         r'\*/',
     ]
-    escaped_keywords = [re.escape(keyword) for keyword in sql_keywords]
+    escaped_keywords = [re.escape(keyword) if not keyword.startswith('r') else keyword for keyword in sql_keywords]
     return re.compile('|'.join(escaped_keywords))
 
 @application.route('/add_quote', methods=['POST'])
