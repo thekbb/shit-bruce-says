@@ -33,33 +33,7 @@ def index():
     return render_template('index.html', quotes=quotes, MAX_INPUT_LENGTH=MAX_INPUT_LENGTH, MIN_INPUT_LENGTH=MIN_INPUT_LENGTH)
 
 def compile_sql_pattern():
-    sql_keywords = [
-        '--',
-        ';',
-        '@',
-        '@@',
-        'DELETE',
-        'DROP',
-        'ELT',
-        'EXEC',
-        'FROM',
-        'INSERT',
-        'ORDER BY',
-        'SELECT',
-        'UNION',
-        'UPDATE',
-        'WHEN',
-        'WHERE',
-        'XP_',
-        'iqen',
-        r'/\*',
-        r"\({2,}",
-        r"\){2,}",
-        r'\*/',
-    ]
-    escaped_keywords = [re.escape(keyword) if not keyword.startswith('r') else keyword for keyword in sql_keywords]
-    return re.compile('|'.join(escaped_keywords))
-
+    return re.compile(r"\({2,}|\){2,}|" +  "|".join(re.escape(keyword) for keyword in ["DELETE", "DROP",  "--", ";", "@", "@@",  "ELT", "EXEC", "FROM", "INSERT", "ORDER", "BY","SELECT", "UNION", "UPDATE", "WHEN", "WHERE", "XP_", "iqen", r"\/\*", r"\*\/"]))
 @application.route('/add_quote', methods=['POST'])
 def add_quote():
     quote = request.form['quote']
