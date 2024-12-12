@@ -16,6 +16,7 @@ class TestSQLPattern(unittest.TestCase):
         self.assertTrue(pattern.search("foo=bar"))
         self.assertTrue(pattern.search("((ddddddd"))
         self.assertTrue(pattern.search("))ddddddd"))
+        self.assertTrue(pattern.search("FNnH RLIKE SLEEP(0)"))
         self.assertTrue(pattern.search("--"))
         self.assertFalse(pattern.search("(testing)"))
         self.assertFalse(pattern.search("testing"))

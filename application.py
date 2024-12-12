@@ -41,9 +41,32 @@ def index():
 
 def compile_sql_pattern():
     return re.compile(r"\({2,}|\){2,}|" + "|".join(re.escape(keyword) for keyword in
-                                                   ["DELETE", "DROP", "=", "#", "--", ";", "@", "@@", "ELT", "EXEC", "FROM",
-                                                    "INSERT", "ORDER", "BY", "SELECT", "UNION", "UPDATE", "WHEN",
-                                                    "WHERE", "XP_", "iqen", r"\/\*", r"\*\/"]))
+                                                   [
+                                                       "#",
+                                                       "--",
+                                                       ";",
+                                                       "=",
+                                                       "@",
+                                                       "BY",
+                                                       "CHR",
+                                                       "DELETE",
+                                                       "DROP",
+                                                       "ELT",
+                                                       "EXEC",
+                                                       "FROM",
+                                                       "INSERT",
+                                                       "ORDER",
+                                                       "RECEIVE_MESSAGE",
+                                                       "SELECT",
+                                                       "SLEEP(",
+                                                       "UNION",
+                                                       "UPDATE",
+                                                       "WAITFOR",
+                                                       "WHEN",
+                                                       "WHERE",
+                                                       "XP_",
+                                                       "iqen",
+                                                   ]))
 
 
 @application.route('/add_quote', methods=['POST'])
@@ -61,6 +84,7 @@ def add_quote():
 
     add_quote_to_table(quote, table)
     return redirect(url_for('index'))
+
 
 if __name__ == '__main__':
     application.run()
