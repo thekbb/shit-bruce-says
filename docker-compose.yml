@@ -1,0 +1,23 @@
+networks:
+  sam-local-net:
+    name: sam-local-net
+
+services:
+  dynamodb-local:
+    image: amazon/dynamodb-local
+    container_name: dynamodb-local
+    ports:
+      - "8000:8000"
+    networks:
+      - sam-local-net
+    command: ["-jar", "DynamoDBLocal.jar", "-inMemory", "-sharedDb"]
+
+  web:
+    image: nginx:alpine
+    container_name: bruce-web
+    ports:
+      - "8080:80"
+    volumes:
+      - ./web:/usr/share/nginx/html:ro
+    networks:
+      - sam-local-net

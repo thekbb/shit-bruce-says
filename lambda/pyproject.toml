@@ -1,0 +1,17 @@
+[project]
+name = "bruce-quotes"
+version = "0.1.0"
+requires-python = ">=3.12"
+# No runtime deps packaged; Lambda runtime provides boto3
+
+[project.optional-dependencies]
+dev = [
+  "boto3",
+  "boto3-stubs[dynamodb]",
+  "moto[dynamodb]",
+  "pytest",
+  "pytest-cov",
+]
+
+[tool.uv]
+index-url = "https://pypi.org/simple"
