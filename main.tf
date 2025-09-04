@@ -67,16 +67,17 @@ data "archive_file" "lambda_zip" {
   output_path = "${path.module}/.dist/lambda.zip"
 
   excludes = [
+    "*.pyc",
+    ".aws-sam",
+    ".DS_Store",
+    ".pytest_cache",
     ".venv",
     "__pycache__",
-    ".pytest_cache",
-    "*.pyc",
-    ".DS_Store",
-    "tests",
-    ".aws-sam",
-    "template.yaml",
     "dev_*",
-    "build.sh",
+    "pyproject.toml",
+    "template.yaml",
+    "tests",
+    "uv.lock",
   ]
 }
 
