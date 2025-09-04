@@ -21,16 +21,6 @@ variable "domain_name" {
   default     = "shitbrucesays.co.uk"
 }
 
-variable "env" {
-  type    = string
-  default = "prod"
-}
-
-variable "project" {
-  type    = string
-  default = "bruce-quotes"
-}
-
 variable "table_name" {
   description = "Name of the DynamoDB table"
   type        = string
