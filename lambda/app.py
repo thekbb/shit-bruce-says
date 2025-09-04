@@ -8,8 +8,19 @@ from datetime import datetime, timezone
 import boto3
 from boto3.dynamodb.conditions import Key
 
-MAX_INPUT_LENGTH = 300
-MIN_INPUT_LENGTH = 5
+class Config:
+    """Application configuration constants."""
+    MAX_INPUT_LENGTH = 300
+    MIN_INPUT_LENGTH = 5
+    DEFAULT_LIMIT = 50
+    MAX_LIMIT = 200
+    REGION = os.getenv("AWS_REGION", "us-east-2")
+    TABLE_NAME = os.getenv("TABLE_NAME", "bruce-quotes")
+
+
+def get_cors_origin():
+    """Get the CORS origin: '*' for local dev, Terraform value for production."""
+    return os.getenv("ALLOW_ORIGIN", "*")  # '*' for local, Terraform sets this in prod
 
 SQLISH = re.compile(
     r"""
@@ -23,10 +34,7 @@ SQLISH = re.compile(
     re.X,
 )
 
-REGION = os.getenv("AWS_REGION", "us-east-2")
-TABLE_NAME = os.getenv("TABLE_NAME", "bruce-quotes")
-
-def _route(event):
+def _route(event, ctx=None):
     http = event.get("requestContext", {}).get("http", {})
     method = (http.get("method") or event.get("httpMethod") or "GET").upper()
 
@@ -39,9 +47,19 @@ def _route(event):
         path = path[:-1]
 
     if method == "GET" and path == "/quotes":
-        return _get_quotes(event, None)
+        return _get_quotes(event, ctx)
     if method == "POST" and path == "/quotes":
-        return _post_quote(event, None)
+        return _post_quote(event, ctx)
+    if method == "OPTIONS":
+        return {
+            "statusCode": 204,
+            "headers": {
+                "access-control-allow-origin": get_cors_origin(),
+                "access-control-allow-methods": "GET,POST,OPTIONS",
+                "access-control-allow-headers": "content-type",
+            },
+            "body": "",
+        }
 
     return _resp(404, {"error": "Not found"})
 
@@ -53,10 +71,10 @@ def _get_table():
         endpoint_url = os.getenv("DYNAMODB_ENDPOINT")  # e.g., http://localhost:8000
         dynamodb = boto3.resource(
             "dynamodb",
-            region_name=os.getenv("AWS_REGION", "us-east-2"),
+            region_name=Config.REGION,
             endpoint_url=endpoint_url,
         )
-        _table = dynamodb.Table(os.getenv("TABLE_NAME", "bruce-quotes"))
+        _table = dynamodb.Table(Config.TABLE_NAME)
     return _table
 
 def _resp(code: int, obj: dict, headers: dict | None = None):
@@ -73,10 +91,10 @@ def _ulid() -> str:
 def _get_quotes(event, _ctx):
     qs = event.get("queryStringParameters") or {}
     try:
-        limit = int(qs.get("limit", 50))
+        limit = int(qs.get("limit", Config.DEFAULT_LIMIT))
     except (TypeError, ValueError):
-        limit = 50
-    limit = max(1, min(limit, 200))
+        limit = Config.DEFAULT_LIMIT
+    limit = max(1, min(limit, Config.MAX_LIMIT))
 
     eks = None
     if qs.get("cursor"):
@@ -97,7 +115,7 @@ def _get_quotes(event, _ctx):
     return _resp(
         200,
         {"items": res.get("Items", []), "cursor": res.get("LastEvaluatedKey")},
-        headers={"access-control-allow-origin": "*"},
+        headers={"access-control-allow-origin": get_cors_origin()},
     )
 
 def _post_quote(event, _ctx):
@@ -108,35 +126,15 @@ def _post_quote(event, _ctx):
 
     quote = (body.get("quote") or "").strip()
     n = len(quote)
-    if not (MIN_INPUT_LENGTH <= n <= MAX_INPUT_LENGTH):
-        return _resp(400, {"error": f"Quote length must be between {MIN_INPUT_LENGTH} and {MAX_INPUT_LENGTH}."})
+    if not (Config.MIN_INPUT_LENGTH <= n <= Config.MAX_INPUT_LENGTH):
+        return _resp(400, {"error": f"Quote length must be between {Config.MIN_INPUT_LENGTH} and {Config.MAX_INPUT_LENGTH}."})
     if SQLISH.search(quote):
         return _resp(400, {"error": "Input contains SQL-like content. There is no SQL here."})
 
     now = datetime.now(timezone.utc).isoformat()
     item = {"PK": "QUOTE", "SK": _ulid(), "quote": quote, "createdAt": now}
     _get_table().put_item(Item=item)
-    return _resp(201, {"createdAt": now}, headers={"access-control-allow-origin": "*"})
+    return _resp(201, {"createdAt": now}, headers={"access-control-allow-origin": get_cors_origin()})
 
 def handler(event, ctx):
-    http = (event.get("requestContext", {}).get("http") or {})
-    method = http.get("method", "GET")
-    path = http.get("path", "/")
-
-    if method == "GET" and path == "/quotes":
-        return _get_quotes(event, ctx)
-    if method == "POST" and path == "/quotes":
-        return _post_quote(event, ctx)
-
-    if method == "OPTIONS":
-        return {
-            "statusCode": 204,
-            "headers": {
-                "access-control-allow-origin": "*",
-                "access-control-allow-methods": "GET,POST,OPTIONS",
-                "access-control-allow-headers": "content-type",
-            },
-            "body": "",
-        }
-
-    return _resp(404, {"error": "Not found"})
+    return _route(event, ctx)

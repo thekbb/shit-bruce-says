@@ -171,3 +171,20 @@ def test_pagination_cursor_descending_order():
     assert r2["statusCode"] == 200
     b2 = json.loads(r2["body"])
     assert [it["quote"] for it in b2["items"]] == ["first"]
+
+
+@mock_aws
+def test_cors_origin_override():
+    """Test that CORS origin can be overridden via environment variable."""
+    _mk_table()
+
+    # Test with environment variable set (production scenario)
+    os.environ["ALLOW_ORIGIN"] = "https://shitbrucesays.co.uk"
+
+    ev = {"requestContext": {"http": {"method": "OPTIONS", "path": "/quotes"}}}
+    r = app.handler(ev, None)
+    assert r["statusCode"] == 204
+    assert r["headers"]["access-control-allow-origin"] == "https://shitbrucesays.co.uk"
+
+    # Clean up
+    del os.environ["ALLOW_ORIGIN"]

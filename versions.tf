@@ -32,6 +32,6 @@ provider "aws" {
 
 # Extra provider for us-east-1 (for CloudFront ACM)
 provider "aws" {
-    alias  = "use1"
-    region = "us-east-1"
+  alias  = "use1"
+  region = "us-east-1"
 }
