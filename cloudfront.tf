@@ -1,4 +1,3 @@
-# CloudFront Origin Access Control
 resource "aws_cloudfront_origin_access_control" "site" {
   name                              = "${local.name}-oac"
   origin_access_control_origin_type = "s3"
@@ -6,7 +5,6 @@ resource "aws_cloudfront_origin_access_control" "site" {
   signing_protocol                  = "sigv4"
 }
 
-# CloudFront Distribution
 resource "aws_cloudfront_distribution" "site" {
   enabled             = true
   default_root_object = "index.html"
@@ -55,7 +53,6 @@ resource "aws_cloudfront_distribution" "site" {
   ]
 }
 
-# S3 Bucket Policy
 data "aws_iam_policy_document" "site_allow_cf" {
   statement {
     actions   = ["s3:GetObject"]

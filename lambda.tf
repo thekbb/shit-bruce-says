@@ -30,7 +30,7 @@ resource "aws_lambda_function" "api" {
   filename         = data.archive_file.lambda_zip.output_path
   source_code_hash = data.archive_file.lambda_zip.output_base64sha256
 
-  reserved_concurrent_executions = 25
+  reserved_concurrent_executions = 10
 
   environment {
     variables = {
