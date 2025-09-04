@@ -118,9 +118,23 @@ resource "aws_apigatewayv2_integration" "lambda_integration" {
   payload_format_version = "2.0"
 }
 
-resource "aws_apigatewayv2_route" "default_route" {
+# GET route (no throttling)
+resource "aws_apigatewayv2_route" "get_quotes" {
   api_id    = aws_apigatewayv2_api.http_api.id
-  route_key = "$default"
+  route_key = "GET /quotes"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda_integration.id}"
+}
+
+resource "aws_apigatewayv2_route" "post_quotes" {
+  api_id    = aws_apigatewayv2_api.http_api.id
+  route_key = "POST /quotes"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda_integration.id}"
+}
+
+# OPTIONS route (for CORS, no throttling)
+resource "aws_apigatewayv2_route" "options_quotes" {
+  api_id    = aws_apigatewayv2_api.http_api.id
+  route_key = "OPTIONS /quotes"
   target    = "integrations/${aws_apigatewayv2_integration.lambda_integration.id}"
 }
 
@@ -128,6 +142,11 @@ resource "aws_apigatewayv2_stage" "default" {
   api_id      = aws_apigatewayv2_api.http_api.id
   name        = "$default"
   auto_deploy = true
+
+  throttle_settings {
+    rate_limit  = 50 # per second
+    burst_limit = 100
+  }
 }
 
 resource "aws_lambda_permission" "api_invoke" {
