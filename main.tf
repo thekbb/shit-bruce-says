@@ -143,10 +143,6 @@ resource "aws_apigatewayv2_stage" "default" {
   name        = "$default"
   auto_deploy = true
 
-  throttle_settings {
-    rate_limit  = 50 # per second
-    burst_limit = 100
-  }
 }
 
 resource "aws_lambda_permission" "api_invoke" {
