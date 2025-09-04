@@ -43,3 +43,11 @@ resource "aws_s3_object" "js" {
   content_type = "application/javascript; charset=utf-8"
   etag         = filemd5("${path.module}/web/app.js")
 }
+
+resource "aws_s3_object" "favicon" {
+  bucket       = aws_s3_bucket.site.id
+  key          = "favicon.svg"
+  source       = "${path.module}/web/favicon.svg"
+  content_type = "image/svg+xml"
+  etag         = filemd5("${path.module}/web/favicon.svg")
+}

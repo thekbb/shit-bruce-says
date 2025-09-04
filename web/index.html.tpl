@@ -13,6 +13,7 @@
   <!-- Terraform (and local render_index.py) inject API base here -->
   <meta name="api-base" content="${api_base_url}" />
 
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="stylesheet" href="styles.css">
   <script src="app.js" defer></script>
   <title>Shit Bruce Says</title>
