@@ -29,3 +29,9 @@ terraform {
 provider "aws" {
   region = var.aws_region
 }
+
+# Extra provider for us-east-1 (for CloudFront ACM)
+provider "aws" {
+    alias  = "use1"
+    region = "us-east-1"
+}

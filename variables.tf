@@ -4,9 +4,21 @@ variable "allow_origin" {
   default     = "*"
 }
 
+variable "api_subdomain" {
+    description = "Subdomain for the API custom domain"
+    type        = string
+    default     = "api"
+}
+
 variable "aws_region" {
   type    = string
   default = "us-east-2"
+}
+
+variable "domain_name" {
+    description = "Root domain name"
+    type        = string
+    default     = "shitbrucesays.co.uk"
 }
 
 variable "env" {
