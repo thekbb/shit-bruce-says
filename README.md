@@ -1,5 +1,7 @@
 # shit-bruce-says
 
+A collection of shit Bruce said, with input to grow the collection.
+
 ## Prereqs
 
 - Terraform ≥ 1.13.1
@@ -8,8 +10,6 @@
 - Docker engine (Rancher Desktop)
 - AWS SAM CLI (`brew tap aws/tap && brew install aws-sam-cli`)
 - AWS CLI (optional; for local table checks)
-
----
 
 ## One-shot local dev (Compose + SAM in background)
 
@@ -67,8 +67,6 @@ pytest -q
 
 Tests use **moto**; no AWS creds required.
 
----
-
 ## Build & deploy to AWS
 
 ```bash
@@ -76,27 +74,3 @@ Tests use **moto**; no AWS creds required.
 terraform init
 terraform apply
 ```
-
-## Make changes
-
-- Lambda code:
-
-  ```bash
-  terraform apply                # for AWS deploys
-
-  # Local loop:
-  make sam           # rebuild + restart SAM in background
-  # or
-  make dev-fg        # foreground run
-  ```
-
-- Website:
-
-  ```bash
-  # AWS deploy path:
-  terraform apply
-
-  # Local dev path:
-  make render
-  # Served by compose (nginx: :8080)
-  ```
