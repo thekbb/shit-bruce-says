@@ -58,6 +58,11 @@ async function fetchPage({ append = true } = {}) {
   if (loading || !hasMore) return;
   loading = true;
 
+  // Show loading indicator
+  if (append && sentinel) {
+    sentinel.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">Loading more quotes...</p>';
+  }
+
   try {
     const url = new URL(`${API_BASE}/quotes`);
     url.searchParams.set("limit", String(PAGE_SIZE));
@@ -83,6 +88,10 @@ async function fetchPage({ append = true } = {}) {
     hasMore = false;
   } finally {
     loading = false;
+    // Clear loading indicator
+    if (sentinel) {
+      sentinel.innerHTML = '';
+    }
   }
 }
 
@@ -184,6 +193,28 @@ window.addEventListener("load", async () => {
   });
 
   io.observe(sentinel);
+
+  // Backup scroll listener for fast scrolling edge cases
+  const nearBottom = () => {
+    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+    const windowHeight = window.innerHeight;
+    const docHeight = document.documentElement.scrollHeight;
+    return scrollTop + windowHeight >= docHeight - 400; // 400px threshold
+  };
+
+  let scrollTimeout;
+  window.addEventListener("scroll", () => {
+    // Clear any existing timeout
+    clearTimeout(scrollTimeout);
+
+    // Set a new timeout to check after scrolling stops/slows
+    scrollTimeout = setTimeout(async () => {
+      if (nearBottom() && hasMore && !loading) {
+        console.log('Near bottom detected via scroll fallback, loading more...');
+        await fetchPage({ append: true });
+      }
+    }, 150); // Check 150ms after scroll activity
+  }, { passive: true });
 
   // Initial load
   await fetchPage({ append: false });
