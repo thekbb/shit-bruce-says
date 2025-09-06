@@ -4,8 +4,8 @@ function apiBase() {
 }
 const API_BASE = apiBase();
 
-const PAGE_SIZE = 10;             // initial + subsequent page size
-const MAX_PAGES_FOR_ANCHOR = 30;  // safety bound when chasing a deep link
+const PAGE_SIZE = 10;
+const MAX_PAGES_FOR_ANCHOR = 30;
 
 function escapeHtml(text) {
   const map = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" };
@@ -15,12 +15,12 @@ function escapeHtml(text) {
 function formatEnglish(dt) {
   return new Date(dt).toLocaleString("en-US", {
     year: "numeric",
-    month: "long",   // "September"
-    day: "2-digit",  // "06"
+    month: "long",
+    day: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
     second: "2-digit",
-    hour12: false    // 24-hour clock
+    hour12: false
   });
 }
 
@@ -34,6 +34,7 @@ let io; // IntersectionObserver
 
 function renderQuotes(items, { append = true } = {}) {
   if (!append) container.innerHTML = "";
+
   for (const q of (items || [])) {
     const div = document.createElement("div");
     div.className = "quote";
@@ -46,6 +47,10 @@ function renderQuotes(items, { append = true } = {}) {
       </p>
     `;
     container.appendChild(div);
+  }
+
+  if (sentinel && sentinel.parentNode !== container) {
+    container.appendChild(sentinel);
   }
 }
 
@@ -66,6 +71,10 @@ async function fetchPage({ append = true } = {}) {
     cursor = data.cursor || null;
     hasMore = Boolean(cursor);
     pagesLoaded += 1;
+
+    // Auto-load more if viewport is too tall and we have more content
+    await autoLoadIfNeeded();
+
   } catch (err) {
     console.error(err);
     if (!append) {
@@ -74,6 +83,21 @@ async function fetchPage({ append = true } = {}) {
     hasMore = false;
   } finally {
     loading = false;
+  }
+}
+
+// Auto-load content if viewport is taller than content (no scrollbar)
+async function autoLoadIfNeeded() {
+  await new Promise(resolve => setTimeout(resolve, 100));
+
+  const viewportHeight = window.innerHeight;
+  const contentHeight = document.body.scrollHeight;
+  const hasScrollbar = contentHeight > viewportHeight;
+
+  // If no scrollbar and we have more content, load another page
+  if (!hasScrollbar && hasMore && !loading) {
+    console.log('Auto-loading more content (no scrollbar detected)');
+    await fetchPage({ append: true });
   }
 }
 
@@ -140,39 +164,28 @@ window.addEventListener("load", async () => {
 
   sentinel = document.createElement("div");
   sentinel.id = "infinite-scroll-sentinel";
+  sentinel.style.height = "1px";
+  sentinel.style.background = "transparent";
   container.appendChild(sentinel);
 
   initFormHandler();
 
-  // IntersectionObserver with bottom margin
   io = new IntersectionObserver(async (entries) => {
     for (const entry of entries) {
-      if (entry.isIntersecting) {
+      if (entry.isIntersecting && hasMore && !loading) {
+        console.log('Sentinel intersected, loading more...');
         await fetchPage({ append: true });
       }
     }
   }, {
     root: null,
-    rootMargin: "0px 0px 800px 0px", // prefetch ~800px before bottom
+    rootMargin: "0px 0px 200px 0px", // Load when 200px from bottom
     threshold: 0
   });
+
   io.observe(sentinel);
 
-  const nearBottom = () =>
-    window.innerHeight + window.scrollY >= (document.body.offsetHeight - 800);
-
-  let ticking = false;
-  window.addEventListener("scroll", () => {
-    if (ticking) return;
-    ticking = true;
-    requestAnimationFrame(async () => {
-      if (nearBottom()) {
-        await fetchPage({ append: true });
-      }
-      ticking = false;
-    });
-  }, { passive: true });
-
-  await fetchPage({ append: false }); // load first 10
-  ensureAnchorVisible();
+  // Initial load
+  await fetchPage({ append: false });
+  await ensureAnchorVisible();
 });
