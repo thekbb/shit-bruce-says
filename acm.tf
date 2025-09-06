@@ -8,7 +8,6 @@ resource "aws_acm_certificate" "cf" {
   ]
 }
 
-# Create DNS validation records in hosted zone
 resource "aws_route53_record" "cf_validation" {
   for_each = {
     for dvo in aws_acm_certificate.cf.domain_validation_options :

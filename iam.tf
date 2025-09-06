@@ -18,8 +18,11 @@ resource "aws_iam_policy" "ddb_access" {
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
-      Effect   = "Allow"
-      Action   = ["dynamodb:PutItem", "dynamodb:Query"]
+      Effect = "Allow"
+      Action = [
+        "dynamodb:PutItem",
+        "dynamodb:Query",
+      ]
       Resource = aws_dynamodb_table.quotes.arn
     }]
   })

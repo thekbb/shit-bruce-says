@@ -28,10 +28,24 @@ terraform {
 
 provider "aws" {
   region = var.aws_region
+
+  default_tags {
+    tags = {
+      environment = "prod"
+      system      = "shit-bruce-says"
+    }
+  }
 }
 
 # Extra provider for us-east-1 (for CloudFront ACM)
 provider "aws" {
   alias  = "use1"
   region = "us-east-1"
+
+  default_tags {
+    tags = {
+      environment = "prod"
+      system      = "shit-bruce-says"
+    }
+  }
 }
