@@ -107,6 +107,7 @@ def _get_quotes(event, _ctx):
         "KeyConditionExpression": Key("PK").eq("QUOTE"),
         "ScanIndexForward": False,
         "Limit": limit,
+        "ProjectionExpression": "quote, createdAt, SK",
     }
     if eks is not None:
         kwargs["ExclusiveStartKey"] = eks
