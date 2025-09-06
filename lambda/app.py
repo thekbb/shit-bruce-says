@@ -12,7 +12,7 @@ class Config:
     """Application configuration constants."""
     MAX_INPUT_LENGTH = 300
     MIN_INPUT_LENGTH = 5
-    DEFAULT_LIMIT = 50
+    DEFAULT_LIMIT = 10
     MAX_LIMIT = 200
     REGION = os.getenv("AWS_REGION", "us-east-2")
     TABLE_NAME = os.getenv("TABLE_NAME", "bruce-quotes")
