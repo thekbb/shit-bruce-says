@@ -1,3 +1,15 @@
+data "aws_cloudfront_cache_policy" "caching_optimized" {
+  name = "Managed-CachingOptimized"
+}
+
+data "aws_cloudfront_origin_request_policy" "cors_s3_origin" {
+  name = "Managed-CORS-S3Origin"
+}
+
+data "aws_cloudfront_response_headers_policy" "security" {
+  name = "Managed-SecurityHeadersPolicy"
+}
+
 resource "aws_cloudfront_origin_access_control" "site" {
   name                              = "${local.name}-oac"
   origin_access_control_origin_type = "s3"
@@ -22,10 +34,9 @@ resource "aws_cloudfront_distribution" "site" {
     cached_methods         = ["GET", "HEAD"]
     compress               = true
 
-    forwarded_values {
-      query_string = false
-      cookies { forward = "none" }
-    }
+    cache_policy_id            = data.aws_cloudfront_cache_policy.caching_optimized.id
+    origin_request_policy_id   = data.aws_cloudfront_origin_request_policy.cors_s3_origin.id
+    response_headers_policy_id = data.aws_cloudfront_response_headers_policy.security.id
   }
 
   aliases = [
@@ -37,11 +48,15 @@ resource "aws_cloudfront_distribution" "site" {
   restrictions {
     geo_restriction {
       restriction_type = "blacklist"
-      locations        = ["CN", "RU"] # China, Russia
+      locations = [
+        "CN",
+        "IR",
+        "KP",
+        "RU",
+      ]
     }
   }
 
-  # Use the us-east-1 ACM cert validated in acm.tf
   viewer_certificate {
     acm_certificate_arn      = aws_acm_certificate_validation.cf.certificate_arn
     ssl_support_method       = "sni-only"
