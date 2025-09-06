@@ -99,21 +99,6 @@ async function ensureAnchorVisible() {
   }
 }
 
-function initInfiniteScroll() {
-  io = new IntersectionObserver(async (entries) => {
-    for (const entry of entries) {
-      if (entry.isIntersecting) {
-        await fetchPage({ append: true });
-      }
-    }
-  }, {
-    root: null,
-    rootMargin: "1000px 0px", // prefetch ~1000px before bottom
-    threshold: 0
-  });
-  io.observe(sentinel);
-}
-
 function initFormHandler() {
   const form = document.getElementById("quote-form");
   form.addEventListener("submit", async (e) => {
@@ -154,12 +139,39 @@ window.addEventListener("load", async () => {
 
   sentinel = document.createElement("div");
   sentinel.id = "infinite-scroll-sentinel";
-  container.after(sentinel);
+  container.appendChild(sentinel);
 
   initFormHandler();
-  initInfiniteScroll();
 
-  await fetchPage({ append: false });
+  // IntersectionObserver with bottom margin
+  io = new IntersectionObserver(async (entries) => {
+    for (const entry of entries) {
+      if (entry.isIntersecting) {
+        await fetchPage({ append: true });
+      }
+    }
+  }, {
+    root: null,
+    rootMargin: "0px 0px 800px 0px", // prefetch ~800px before bottom
+    threshold: 0
+  });
+  io.observe(sentinel);
 
+  const nearBottom = () =>
+    window.innerHeight + window.scrollY >= (document.body.offsetHeight - 800);
+
+  let ticking = false;
+  window.addEventListener("scroll", () => {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(async () => {
+      if (nearBottom()) {
+        await fetchPage({ append: true });
+      }
+      ticking = false;
+    });
+  }, { passive: true });
+
+  await fetchPage({ append: false }); // load first 10
   ensureAnchorVisible();
 });
