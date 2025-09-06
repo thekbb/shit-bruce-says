@@ -13,14 +13,15 @@ function escapeHtml(text) {
 }
 
 function formatEnglish(dt) {
-  const d = new Date(dt);
-  const months = [
-    "January","February","March","April","May","June",
-    "July","August","September","October","November","December"
-  ];
-  const pad = (n) => String(n).padStart(2, "0");
-  return `${months[d.getMonth()]} ${pad(d.getDate())}, ${d.getFullYear()} `
-       + `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  return new Date(dt).toLocaleString("en-US", {
+    year: "numeric",
+    month: "long",   // "September"
+    day: "2-digit",  // "06"
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false    // 24-hour clock
+  });
 }
 
 let container;
