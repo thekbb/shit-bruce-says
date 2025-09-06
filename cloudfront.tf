@@ -20,6 +20,7 @@ resource "aws_cloudfront_distribution" "site" {
     viewer_protocol_policy = "redirect-to-https"
     allowed_methods        = ["GET", "HEAD"]
     cached_methods         = ["GET", "HEAD"]
+    compress               = true
 
     forwarded_values {
       query_string = false
@@ -27,7 +28,6 @@ resource "aws_cloudfront_distribution" "site" {
     }
   }
 
-  # Only serve non-www version
   aliases = [
     var.domain_name,
   ]
