@@ -35,6 +35,8 @@ let io; // IntersectionObserver
 function renderQuotes(items, { append = true } = {}) {
   if (!append) container.innerHTML = "";
 
+  const fragment = document.createDocumentFragment();
+
   for (const q of (items || [])) {
     const div = document.createElement("div");
     div.className = "quote";
@@ -46,21 +48,31 @@ function renderQuotes(items, { append = true } = {}) {
         <a href="#${q.SK}">${formatEnglish(q.createdAt)}</a>
       </p>
     `;
-    container.appendChild(div);
+    fragment.appendChild(div);
   }
 
-  if (sentinel && sentinel.parentNode !== container) {
-    container.appendChild(sentinel);
-  }
+  requestAnimationFrame(() => {
+    container.appendChild(fragment);
+
+    if (sentinel && sentinel.parentNode !== container) {
+      container.appendChild(sentinel);
+    }
+  });
 }
 
 async function fetchPage({ append = true } = {}) {
   if (loading || !hasMore) return;
   loading = true;
 
-  // Show loading indicator
+  // Show loading indicator with smooth transition
   if (append && sentinel) {
-    sentinel.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">Loading more quotes...</p>';
+    requestAnimationFrame(() => {
+      sentinel.innerHTML = '<p style="text-align: center; color: #666; padding: 20px; opacity: 0; transition: opacity 0.2s ease-in;">Loading more quotes...</p>';
+      requestAnimationFrame(() => {
+        const loadingEl = sentinel.querySelector('p');
+        if (loadingEl) loadingEl.style.opacity = '1';
+      });
+    });
   }
 
   try {
@@ -68,7 +80,7 @@ async function fetchPage({ append = true } = {}) {
     url.searchParams.set("limit", String(PAGE_SIZE));
     if (cursor) url.searchParams.set("cursor", JSON.stringify(cursor));
 
-    const res = await fetch(url.toString(), { cache: "no-store" });
+    const res = await fetch(url.toString());
     if (!res.ok) throw new Error(`GET /quotes failed (${res.status})`);
     const data = await res.json();
 
@@ -88,26 +100,37 @@ async function fetchPage({ append = true } = {}) {
     hasMore = false;
   } finally {
     loading = false;
-    // Clear loading indicator
     if (sentinel) {
-      sentinel.innerHTML = '';
+      const loadingEl = sentinel.querySelector('p');
+      if (loadingEl) {
+        loadingEl.style.opacity = '0';
+        setTimeout(() => {
+          if (sentinel) sentinel.innerHTML = '';
+        }, 200); // Wait for fade out transition
+      } else {
+        sentinel.innerHTML = '';
+      }
     }
   }
 }
 
 // Auto-load content if viewport is taller than content (no scrollbar)
 async function autoLoadIfNeeded() {
-  await new Promise(resolve => setTimeout(resolve, 100));
+  return new Promise(resolve => {
+    requestAnimationFrame(() => {
+      const viewportHeight = window.innerHeight;
+      const contentHeight = document.body.scrollHeight;
+      const hasScrollbar = contentHeight > viewportHeight;
 
-  const viewportHeight = window.innerHeight;
-  const contentHeight = document.body.scrollHeight;
-  const hasScrollbar = contentHeight > viewportHeight;
-
-  // If no scrollbar and we have more content, load another page
-  if (!hasScrollbar && hasMore && !loading) {
-    console.log('Auto-loading more content (no scrollbar detected)');
-    await fetchPage({ append: true });
-  }
+      // If no scrollbar and we have more content, load another page
+      if (!hasScrollbar && hasMore && !loading) {
+        console.log('Auto-loading more content (no scrollbar detected)');
+        fetchPage({ append: true }).then(resolve);
+      } else {
+        resolve();
+      }
+    });
+  });
 }
 
 async function ensureAnchorVisible() {
@@ -168,8 +191,21 @@ function initFormHandler() {
   });
 }
 
-window.addEventListener("load", async () => {
+// Early initialization - don't wait for full page load
+function initializeApp() {
   container = document.getElementById("quotes");
+  if (!container) return; // Not ready yet
+
+  container.innerHTML = `
+    <div class="loading-skeleton">
+      <div class="quote skeleton-quote">
+        <h2>Loading quotes...</h2>
+        <div class="skeleton-line"></div>
+        <div class="skeleton-line short"></div>
+        <div class="skeleton-timestamp"></div>
+      </div>
+    </div>
+  `;
 
   sentinel = document.createElement("div");
   sentinel.id = "infinite-scroll-sentinel";
@@ -183,12 +219,16 @@ window.addEventListener("load", async () => {
     for (const entry of entries) {
       if (entry.isIntersecting && hasMore && !loading) {
         console.log('Sentinel intersected, loading more...');
-        await fetchPage({ append: true });
+        requestAnimationFrame(() => {
+          if (hasMore && !loading) {
+            fetchPage({ append: true });
+          }
+        });
       }
     }
   }, {
     root: null,
-    rootMargin: "0px 0px 200px 0px", // Load when 200px from bottom
+    rootMargin: "0px 0px 300px 0px", // Load when 300px from bottom
     threshold: 0
   });
 
@@ -203,20 +243,43 @@ window.addEventListener("load", async () => {
   };
 
   let scrollTimeout;
-  window.addEventListener("scroll", () => {
-    // Clear any existing timeout
-    clearTimeout(scrollTimeout);
+  let ticking = false;
 
-    // Set a new timeout to check after scrolling stops/slows
-    scrollTimeout = setTimeout(async () => {
-      if (nearBottom() && hasMore && !loading) {
-        console.log('Near bottom detected via scroll fallback, loading more...');
-        await fetchPage({ append: true });
-      }
-    }, 150); // Check 150ms after scroll activity
-  }, { passive: true });
+  const handleScroll = () => {
+    if (!ticking) {
+      requestAnimationFrame(() => {
+        clearTimeout(scrollTimeout);
 
-  // Initial load
-  await fetchPage({ append: false });
-  await ensureAnchorVisible();
+        scrollTimeout = setTimeout(async () => {
+          if (nearBottom() && hasMore && !loading) {
+            console.log('Near bottom detected via scroll fallback, loading more...');
+            await fetchPage({ append: true });
+          }
+        }, 100);
+
+        ticking = false;
+      });
+      ticking = true;
+    }
+  };
+
+  window.addEventListener("scroll", handleScroll, { passive: true });
+
+  // Start loading quotes immediately
+  fetchPage({ append: false });
+}
+
+// Try to initialize as soon as DOM is ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initializeApp);
+} else {
+  // DOM already loaded
+  initializeApp();
+}
+
+// Fallback for full page load (handles anchor links)
+window.addEventListener("load", async () => {
+  if (container) {
+    await ensureAnchorVisible();
+  }
 });

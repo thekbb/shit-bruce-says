@@ -167,3 +167,53 @@ blockquote {
     font-size: 0.8rem;
   }
 }
+
+/* Loading skeleton styles */
+.loading-skeleton {
+  opacity: 0.7;
+}
+
+.skeleton-quote {
+  animation: skeleton-pulse 1.5s ease-in-out infinite alternate;
+}
+
+.skeleton-line {
+  height: 1.2rem;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite;
+  border-radius: 4px;
+  margin: 0.5rem 0;
+}
+
+.skeleton-line.short {
+  width: 60%;
+}
+
+.skeleton-timestamp {
+  height: 0.9rem;
+  width: 40%;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite;
+  border-radius: 4px;
+  margin-top: 1rem;
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes skeleton-pulse {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.4;
+  }
+}
