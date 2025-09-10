@@ -1,11 +1,14 @@
-function apiBase() {
-  const raw = document.querySelector('meta[name="api-base"]')?.content || '';
-  return raw.replace(/\/$/, '');
-}
-const API_BASE = apiBase();
-
-const PAGE_SIZE = 10;
-const MAX_PAGES_FOR_ANCHOR = 30;
+const CONFIG = {
+  CONFIG.API_BASE: (() => {
+    const raw = document.querySelector('meta[name="api-base"]')?.content || '';
+    return raw.replace(/\/$/, '');
+  })(),
+  CONFIG.PAGE_SIZE: 10,
+  CONFIG.MAX_PAGES_FOR_ANCHOR: 30,
+  SCROLL_THRESHOLD: 400,
+  HIGHLIGHT_DURATION: 3000,
+  THROTTLE_DELAY: 100
+};
 
 function escapeHtml(text) {
   const map = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" };
@@ -60,8 +63,8 @@ async function loadInitial() {
   loading = true;
 
   try {
-    const url = new URL(`${API_BASE}/quotes`);
-    url.searchParams.set("limit", String(PAGE_SIZE));
+    const url = new URL(`${CONFIG.API_BASE}/quotes`);
+    url.searchParams.set("limit", String(CONFIG.PAGE_SIZE));
 
     const res = await fetch(url.toString());
     if (!res.ok) throw new Error(`GET /quotes failed (${res.status})`);
@@ -84,8 +87,8 @@ async function loadInitial() {
 function getPath() {
   if (!hasMore) return false;
 
-  const url = new URL(`${API_BASE}/quotes`);
-  url.searchParams.set("limit", String(PAGE_SIZE));
+  const url = new URL(`${CONFIG.API_BASE}/quotes`);
+  url.searchParams.set("limit", String(CONFIG.PAGE_SIZE));
   if (cursor) url.searchParams.set("cursor", JSON.stringify(cursor));
 
   return url.toString();
@@ -107,7 +110,7 @@ async function ensureAnchorVisible() {
     if (el) {
       el.scrollIntoView({ behavior: "smooth", block: "center" });
       el.classList.add("highlight");
-      setTimeout(() => el.classList.remove("highlight"), 3000);
+      setTimeout(() => el.classList.remove("highlight"), CONFIG.HIGHLIGHT_DURATION);
       return true;
     }
     return false;
@@ -115,10 +118,10 @@ async function ensureAnchorVisible() {
 
   if (tryHighlight()) return;
 
-  for (let i = 0; i < MAX_PAGES_FOR_ANCHOR && hasMore; i += 1) {
+  for (let i = 0; i < CONFIG.MAX_PAGES_FOR_ANCHOR && hasMore; i += 1) {
     try {
-      const url = new URL(`${API_BASE}/quotes`);
-      url.searchParams.set("limit", String(PAGE_SIZE));
+      const url = new URL(`${CONFIG.API_BASE}/quotes`);
+      url.searchParams.set("limit", String(CONFIG.PAGE_SIZE));
       if (cursor) url.searchParams.set("cursor", JSON.stringify(cursor));
 
       const res = await fetch(url.toString());
@@ -146,7 +149,7 @@ function initFormHandler() {
     if (!quote) return;
 
     try {
-      const resp = await fetch(`${API_BASE}/quotes`, {
+      const resp = await fetch(`${CONFIG.API_BASE}/quotes`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ quote }),
@@ -193,7 +196,7 @@ function initializeApp() {
     responseBody: 'json',
     outlayer: false,
     loadOnScroll: true,
-    scrollThreshold: 400
+    scrollThreshold: CONFIG.SCROLL_THRESHOLD
   });
 
   infScroll.on('request', () => {
