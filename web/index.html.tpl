@@ -20,18 +20,24 @@
   <meta name="keywords" content="Bruce quotes, sayings, memorable quotes, funny quotes, Bruce sayings">
   <meta name="author" content="Shit Bruce Says">
 
-  <!-- Open Graph / Facebook -->
+  <!-- Open Graph / Facebook / LinkedIn -->
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://shitbrucesays.co.uk/">
-  <meta property="og:title" content="Shit Bruce Says>
+  <meta property="og:title" content="Shit Bruce Says">
   <meta property="og:description" content="A collection of memorable quotes and sayings from Bruce. Share your favorite Bruce quotes and discover what others remember him saying.">
   <meta property="og:site_name" content="Shit Bruce Says">
+  <meta property="og:image" content="https://shitbrucesays.co.uk/favicon.svg">
+  <meta property="og:image:width" content="512">
+  <meta property="og:image:height" content="512">
+  <meta property="og:image:type" content="image/svg+xml">
+  <meta property="og:locale" content="en_US">
 
   <!-- Twitter (Because nobody calls it X. Ever.)-->
   <meta property="twitter:card" content="summary">
   <meta property="twitter:url" content="https://shitbrucesays.co.uk/">
   <meta property="twitter:title" content="Shit Bruce Says">
   <meta property="twitter:description" content="A collection of memorable quotes and sayings from Bruce. Share your favorite Bruce quotes and discover what others remember him saying.">
+  <meta property="twitter:image" content="https://shitbrucesays.co.uk/favicon.svg">
 
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="stylesheet" href="styles.css">

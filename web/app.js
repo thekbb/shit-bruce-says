@@ -271,7 +271,8 @@ function initInfiniteScroll() {
     responseBody: 'json',
     outlayer: false,
     loadOnScroll: true,
-    scrollThreshold: CONFIG.SCROLL_THRESHOLD
+    scrollThreshold: CONFIG.SCROLL_THRESHOLD,
+    history: false
   });
 
   State.infScroll.on('request', EventHandlers.handleInfiniteScrollRequest);
