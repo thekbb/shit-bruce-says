@@ -35,6 +35,7 @@
 
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="stylesheet" href="styles.css">
+  <script src="https://unpkg.com/infinite-scroll@4/dist/infinite-scroll.pkgd.min.js"></script>
   <script src="app.js" defer></script>
   <title>Shit Bruce Says</title>
 </head>

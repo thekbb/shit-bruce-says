@@ -25,18 +25,13 @@ function formatEnglish(dt) {
 }
 
 let container;
-let sentinel;
 let cursor = null;
 let hasMore = true;
 let loading = false;
-let pagesLoaded = 0;
-let io; // IntersectionObserver
-let lastLoadTime = 0; // Prevent rapid duplicate loads
+let infScroll;
 
-function renderQuotes(items, { append = true } = {}) {
-  if (!append) container.innerHTML = "";
-
-  const fragment = document.createDocumentFragment();
+function renderQuotes(items) {
+  const elements = [];
 
   for (const q of (items || [])) {
     const article = document.createElement("article");
@@ -54,111 +49,54 @@ function renderQuotes(items, { append = true } = {}) {
         <a href="#${q.SK}" aria-label="Link to this quote">${formatEnglish(q.createdAt)}</a>
       </time>
     `;
-    fragment.appendChild(article);
+    elements.push(article);
   }
 
-  requestAnimationFrame(() => {
-    // Preserve scroll position during content addition
-    const scrollTop = window.pageYOffset;
-    const docHeight = document.documentElement.scrollHeight;
-
-    container.appendChild(fragment);
-
-    if (sentinel && sentinel.parentNode !== container) {
-      container.appendChild(sentinel);
-    }
-
-    // Maintain scroll position if content was added above viewport
-    requestAnimationFrame(() => {
-      const newDocHeight = document.documentElement.scrollHeight;
-      const heightDiff = newDocHeight - docHeight;
-
-      // Only adjust if significant content was added and we're not at the top
-      if (heightDiff > 50 && scrollTop > 100) {
-        window.scrollTo(0, scrollTop);
-      }
-    });
-  });
+  return elements;
 }
 
-async function fetchPage({ append = true } = {}) {
-  if (loading || !hasMore) return;
-
-  // Prevent rapid duplicate loads during fast scrolling
-  const now = Date.now();
-  if (append && now - lastLoadTime < 200) return;
-
+async function loadInitial() {
+  if (loading) return;
   loading = true;
-  lastLoadTime = now;
-
-  // Show loading indicator with smooth transition
-  if (append && sentinel) {
-    requestAnimationFrame(() => {
-      sentinel.innerHTML = '<p style="text-align: center; color: #666; padding: 20px; opacity: 0; transition: opacity 0.2s ease-in;">Loading more quotes...</p>';
-      requestAnimationFrame(() => {
-        const loadingEl = sentinel.querySelector('p');
-        if (loadingEl) loadingEl.style.opacity = '1';
-      });
-    });
-  }
 
   try {
     const url = new URL(`${API_BASE}/quotes`);
     url.searchParams.set("limit", String(PAGE_SIZE));
-    if (cursor) url.searchParams.set("cursor", JSON.stringify(cursor));
 
     const res = await fetch(url.toString());
     if (!res.ok) throw new Error(`GET /quotes failed (${res.status})`);
     const data = await res.json();
 
-    renderQuotes(data.items || [], { append });
-    cursor = data.cursor || null;
-    hasMore = Boolean(cursor);
-    pagesLoaded += 1;
-
-    // Auto-load more if viewport is too tall and we have more content
-    await autoLoadIfNeeded();
+    container.innerHTML = '';
+    const items = transform(data);
+    const elements = renderQuotes(items);
+    elements.forEach(el => container.appendChild(el));
 
   } catch (err) {
     console.error(err);
-    if (!append) {
-      container.innerHTML = `<p style="color:#b00;text-align:left;">Error loading quotes: ${escapeHtml(err.message || String(err))}</p>`;
-    }
+    container.innerHTML = `<p style="color:#b00;text-align:left;">Error loading quotes: ${escapeHtml(err.message || String(err))}</p>`;
     hasMore = false;
   } finally {
     loading = false;
-    if (sentinel) {
-      const loadingEl = sentinel.querySelector('p');
-      if (loadingEl) {
-        loadingEl.style.opacity = '0';
-        setTimeout(() => {
-          if (sentinel) sentinel.innerHTML = '';
-        }, 200); // Wait for fade out transition
-      } else {
-        sentinel.innerHTML = '';
-      }
-    }
   }
 }
 
-// Auto-load content if viewport is taller than content (no scrollbar)
-async function autoLoadIfNeeded() {
-  return new Promise(resolve => {
-    requestAnimationFrame(() => {
-      const viewportHeight = window.innerHeight;
-      const contentHeight = document.body.scrollHeight;
-      const hasScrollbar = contentHeight > viewportHeight;
+function getPath() {
+  if (!hasMore) return false;
 
-      // If no scrollbar and we have more content, load another page
-      if (!hasScrollbar && hasMore && !loading) {
-        console.log('Auto-loading more content (no scrollbar detected)');
-        fetchPage({ append: true }).then(resolve);
-      } else {
-        resolve();
-      }
-    });
-  });
+  const url = new URL(`${API_BASE}/quotes`);
+  url.searchParams.set("limit", String(PAGE_SIZE));
+  if (cursor) url.searchParams.set("cursor", JSON.stringify(cursor));
+
+  return url.toString();
 }
+
+function transform(data) {
+  cursor = data.cursor || null;
+  hasMore = Boolean(data.cursor);
+  return data.items || [];
+}
+
 
 async function ensureAnchorVisible() {
   const anchorId = window.location.hash.slice(1);
@@ -178,8 +116,24 @@ async function ensureAnchorVisible() {
   if (tryHighlight()) return;
 
   for (let i = 0; i < MAX_PAGES_FOR_ANCHOR && hasMore; i += 1) {
-    await fetchPage({ append: true });
-    if (tryHighlight()) return;
+    try {
+      const url = new URL(`${API_BASE}/quotes`);
+      url.searchParams.set("limit", String(PAGE_SIZE));
+      if (cursor) url.searchParams.set("cursor", JSON.stringify(cursor));
+
+      const res = await fetch(url.toString());
+      if (!res.ok) throw new Error(`GET /quotes failed (${res.status})`);
+      const data = await res.json();
+
+      const items = transform(data);
+      const elements = renderQuotes(items);
+      elements.forEach(el => container.appendChild(el));
+
+      if (tryHighlight()) return;
+    } catch (err) {
+      console.error(err);
+      break;
+    }
   }
 }
 
@@ -208,8 +162,7 @@ function initFormHandler() {
 
       cursor = null;
       hasMore = true;
-      pagesLoaded = 0;
-      await fetchPage({ append: false });
+      await loadInitial();
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err) {
       alert(err.message || "Failed to add quote.");
@@ -218,10 +171,9 @@ function initFormHandler() {
   });
 }
 
-// Early initialization - don't wait for full page load
 function initializeApp() {
   container = document.getElementById("quotes");
-  if (!container) return; // Not ready yet
+  if (!container) return;
 
   container.innerHTML = `
     <div class="loading-skeleton">
@@ -234,82 +186,42 @@ function initializeApp() {
     </div>
   `;
 
-  sentinel = document.createElement("div");
-  sentinel.id = "infinite-scroll-sentinel";
-  sentinel.style.height = "1px";
-  sentinel.style.background = "transparent";
-  container.appendChild(sentinel);
-
   initFormHandler();
 
-  io = new IntersectionObserver(async (entries) => {
-    for (const entry of entries) {
-      if (entry.isIntersecting && hasMore && !loading) {
-        console.log('Sentinel intersected, loading more...');
-        // Immediate load for intersection observer to prevent bounce
-        fetchPage({ append: true });
-      }
-    }
-  }, {
-    root: null,
-    rootMargin: "0px 0px 500px 0px", // Increased to 500px for earlier loading
-    threshold: 0
+  infScroll = new InfiniteScroll(container, {
+    path: getPath,
+    responseBody: 'json',
+    outlayer: false,
+    loadOnScroll: true,
+    scrollThreshold: 400
   });
 
-  io.observe(sentinel);
+  infScroll.on('request', () => {
+    loading = true;
+  });
 
-  // Enhanced scroll listener for fast scrolling
-  const nearBottom = () => {
-    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-    const windowHeight = window.innerHeight;
-    const docHeight = document.documentElement.scrollHeight;
-    return scrollTop + windowHeight >= docHeight - 600; // Increased threshold for fast scrolling
-  };
+  infScroll.on('load', (data) => {
+    const items = transform(data);
+    const elements = renderQuotes(items);
+    elements.forEach(el => container.appendChild(el));
+    loading = false;
+  });
 
-  let scrollTimeout;
-  let ticking = false;
-  let lastScrollTop = 0;
-  let scrollVelocity = 0;
+  infScroll.on('error', (error) => {
+    console.error(error);
+    hasMore = false;
+    loading = false;
+  });
 
-  const handleScroll = () => {
-    if (!ticking) {
-      requestAnimationFrame(() => {
-        const currentScrollTop = window.pageYOffset || document.documentElement.scrollTop;
-        scrollVelocity = Math.abs(currentScrollTop - lastScrollTop);
-        lastScrollTop = currentScrollTop;
-
-        clearTimeout(scrollTimeout);
-
-        const timeout = scrollVelocity > 100 ? 50 : 100;
-
-        scrollTimeout = setTimeout(async () => {
-          if (nearBottom() && hasMore && !loading) {
-            console.log('Near bottom detected via scroll fallback, loading more...');
-            await fetchPage({ append: true });
-          }
-        }, timeout);
-
-        ticking = false;
-      });
-      ticking = true;
-    }
-  };
-
-  window.addEventListener("scroll", handleScroll, { passive: true });
-
-  // Start loading quotes immediately
-  fetchPage({ append: false });
+  loadInitial();
 }
 
-// Try to initialize as soon as DOM is ready
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initializeApp);
 } else {
-  // DOM already loaded
   initializeApp();
 }
 
-// Fallback for full page load (handles anchor links)
 window.addEventListener("load", async () => {
   if (container) {
     await ensureAnchorVisible();
