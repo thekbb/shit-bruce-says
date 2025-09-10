@@ -31,6 +31,7 @@ let hasMore = true;
 let loading = false;
 let pagesLoaded = 0;
 let io; // IntersectionObserver
+let lastLoadTime = 0; // Prevent rapid duplicate loads
 
 function renderQuotes(items, { append = true } = {}) {
   if (!append) container.innerHTML = "";
@@ -52,17 +53,38 @@ function renderQuotes(items, { append = true } = {}) {
   }
 
   requestAnimationFrame(() => {
+    // Preserve scroll position during content addition
+    const scrollTop = window.pageYOffset;
+    const docHeight = document.documentElement.scrollHeight;
+
     container.appendChild(fragment);
 
     if (sentinel && sentinel.parentNode !== container) {
       container.appendChild(sentinel);
     }
+
+    // Maintain scroll position if content was added above viewport
+    requestAnimationFrame(() => {
+      const newDocHeight = document.documentElement.scrollHeight;
+      const heightDiff = newDocHeight - docHeight;
+
+      // Only adjust if significant content was added and we're not at the top
+      if (heightDiff > 50 && scrollTop > 100) {
+        window.scrollTo(0, scrollTop);
+      }
+    });
   });
 }
 
 async function fetchPage({ append = true } = {}) {
   if (loading || !hasMore) return;
+
+  // Prevent rapid duplicate loads during fast scrolling
+  const now = Date.now();
+  if (append && now - lastLoadTime < 200) return;
+
   loading = true;
+  lastLoadTime = now;
 
   // Show loading indicator with smooth transition
   if (append && sentinel) {
@@ -219,43 +241,49 @@ function initializeApp() {
     for (const entry of entries) {
       if (entry.isIntersecting && hasMore && !loading) {
         console.log('Sentinel intersected, loading more...');
-        requestAnimationFrame(() => {
-          if (hasMore && !loading) {
-            fetchPage({ append: true });
-          }
-        });
+        // Immediate load for intersection observer to prevent bounce
+        fetchPage({ append: true });
       }
     }
   }, {
     root: null,
-    rootMargin: "0px 0px 300px 0px", // Load when 300px from bottom
+    rootMargin: "0px 0px 500px 0px", // Increased to 500px for earlier loading
     threshold: 0
   });
 
   io.observe(sentinel);
 
-  // Backup scroll listener for fast scrolling edge cases
+  // Enhanced scroll listener for fast scrolling
   const nearBottom = () => {
     const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
     const windowHeight = window.innerHeight;
     const docHeight = document.documentElement.scrollHeight;
-    return scrollTop + windowHeight >= docHeight - 400; // 400px threshold
+    return scrollTop + windowHeight >= docHeight - 600; // Increased threshold for fast scrolling
   };
 
   let scrollTimeout;
   let ticking = false;
+  let lastScrollTop = 0;
+  let scrollVelocity = 0;
 
   const handleScroll = () => {
     if (!ticking) {
       requestAnimationFrame(() => {
+        const currentScrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        scrollVelocity = Math.abs(currentScrollTop - lastScrollTop);
+        lastScrollTop = currentScrollTop;
+
         clearTimeout(scrollTimeout);
+
+        // Faster response for high-velocity scrolling
+        const timeout = scrollVelocity > 100 ? 50 : 100;
 
         scrollTimeout = setTimeout(async () => {
           if (nearBottom() && hasMore && !loading) {
             console.log('Near bottom detected via scroll fallback, loading more...');
             await fetchPage({ append: true });
           }
-        }, 100);
+        }, timeout);
 
         ticking = false;
       });
