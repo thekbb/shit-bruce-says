@@ -27,6 +27,78 @@ function formatEnglish(dt) {
   });
 }
 
+const API = {
+  async fetchQuotes(cursor = null) {
+    const url = new URL(`${CONFIG.API_BASE}/quotes`);
+    url.searchParams.set("limit", String(CONFIG.PAGE_SIZE));
+    if (cursor) url.searchParams.set("cursor", JSON.stringify(cursor));
+
+    const response = await fetch(url.toString());
+    if (!response.ok) {
+      throw new Error(`GET /quotes failed (${response.status})`);
+    }
+    return response.json();
+  },
+
+  async createQuote(quote) {
+    const response = await fetch(`${CONFIG.API_BASE}/quotes`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ quote }),
+    });
+
+    if (!response.ok) {
+      let message = `POST /quotes failed (${response.status})`;
+      try {
+        const error = await response.json();
+        if (error?.error) message = error.error;
+      } catch {}
+      throw new Error(message);
+    }
+
+    return response.json();
+  }
+};
+
+const DOM = {
+
+  createQuoteElement(quote) {
+    const article = document.createElement("article");
+    article.className = "quote";
+    article.id = quote.SK;
+    article.innerHTML = `
+      <h3 class="visually-hidden">Quote from ${formatEnglish(quote.createdAt)}</h3>
+      <blockquote cite="#${quote.SK}">
+        <p>${escapeHtml(quote.quote)}</p>
+        <footer>
+          <cite>— Bruce</cite>
+        </footer>
+      </blockquote>
+      <time class="timestamp" datetime="${quote.createdAt}">
+        <a href="#${quote.SK}" aria-label="Link to this quote">${formatEnglish(quote.createdAt)}</a>
+      </time>
+    `;
+    return article;
+  },
+
+  createLoadingSkeleton() {
+    return `
+      <div class="loading-skeleton">
+        <div class="quote skeleton-quote">
+          <h2>Loading quotes...</h2>
+          <div class="skeleton-line"></div>
+          <div class="skeleton-line short"></div>
+          <div class="skeleton-timestamp"></div>
+        </div>
+      </div>
+    `;
+  },
+
+  createErrorMessage(message) {
+    return `<p style="color:#b00;text-align:left;">Error loading quotes: ${escapeHtml(message)}</p>`;
+  }
+};
+
 let container;
 let cursor = null;
 let hasMore = true;
@@ -34,28 +106,7 @@ let loading = false;
 let infScroll;
 
 function renderQuotes(items) {
-  const elements = [];
-
-  for (const q of (items || [])) {
-    const article = document.createElement("article");
-    article.className = "quote";
-    article.id = q.SK;
-    article.innerHTML = `
-      <h3 class="visually-hidden">Quote from ${formatEnglish(q.createdAt)}</h3>
-      <blockquote cite="#${q.SK}">
-        <p>${escapeHtml(q.quote)}</p>
-        <footer>
-          <cite>— Bruce</cite>
-        </footer>
-      </blockquote>
-      <time class="timestamp" datetime="${q.createdAt}">
-        <a href="#${q.SK}" aria-label="Link to this quote">${formatEnglish(q.createdAt)}</a>
-      </time>
-    `;
-    elements.push(article);
-  }
-
-  return elements;
+  return (items || []).map(quote => DOM.createQuoteElement(quote));
 }
 
 async function loadInitial() {
@@ -63,13 +114,7 @@ async function loadInitial() {
   loading = true;
 
   try {
-    const url = new URL(`${CONFIG.API_BASE}/quotes`);
-    url.searchParams.set("limit", String(CONFIG.PAGE_SIZE));
-
-    const res = await fetch(url.toString());
-    if (!res.ok) throw new Error(`GET /quotes failed (${res.status})`);
-    const data = await res.json();
-
+    const data = await API.fetchQuotes();
     container.innerHTML = '';
     const items = transform(data);
     const elements = renderQuotes(items);
@@ -77,7 +122,7 @@ async function loadInitial() {
 
   } catch (err) {
     console.error(err);
-    container.innerHTML = `<p style="color:#b00;text-align:left;">Error loading quotes: ${escapeHtml(err.message || String(err))}</p>`;
+    container.innerHTML = DOM.createErrorMessage(err.message || String(err));
     hasMore = false;
   } finally {
     loading = false;
@@ -120,14 +165,7 @@ async function ensureAnchorVisible() {
 
   for (let i = 0; i < CONFIG.MAX_PAGES_FOR_ANCHOR && hasMore; i += 1) {
     try {
-      const url = new URL(`${CONFIG.API_BASE}/quotes`);
-      url.searchParams.set("limit", String(CONFIG.PAGE_SIZE));
-      if (cursor) url.searchParams.set("cursor", JSON.stringify(cursor));
-
-      const res = await fetch(url.toString());
-      if (!res.ok) throw new Error(`GET /quotes failed (${res.status})`);
-      const data = await res.json();
-
+      const data = await API.fetchQuotes(cursor);
       const items = transform(data);
       const elements = renderQuotes(items);
       elements.forEach(el => container.appendChild(el));
@@ -149,18 +187,7 @@ function initFormHandler() {
     if (!quote) return;
 
     try {
-      const resp = await fetch(`${CONFIG.API_BASE}/quotes`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ quote }),
-      });
-
-      if (!resp.ok) {
-        let msg = `POST /quotes failed (${resp.status})`;
-        try { const err = await resp.json(); if (err?.error) msg = err.error; } catch {}
-        throw new Error(msg);
-      }
-
+      await API.createQuote(quote);
       input.value = "";
 
       cursor = null;
@@ -178,16 +205,7 @@ function initializeApp() {
   container = document.getElementById("quotes");
   if (!container) return;
 
-  container.innerHTML = `
-    <div class="loading-skeleton">
-      <div class="quote skeleton-quote">
-        <h2>Loading quotes...</h2>
-        <div class="skeleton-line"></div>
-        <div class="skeleton-line short"></div>
-        <div class="skeleton-timestamp"></div>
-      </div>
-    </div>
-  `;
+  container.innerHTML = DOM.createLoadingSkeleton();
 
   initFormHandler();
 
