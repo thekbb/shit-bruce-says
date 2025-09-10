@@ -119,13 +119,28 @@ def _get_quotes(event, _ctx):
         headers={"access-control-allow-origin": get_cors_origin()},
     )
 
+def _normalize_quote(quote_text):
+    """Remove surrounding quotes from quote text to ensure consistent storage format."""
+    text = quote_text.strip()
+
+    quote_chars = ['"', "'", '"', '"', "'", "'"]
+
+    for quote_char in quote_chars:
+        if len(text) >= 2 and text.startswith(quote_char) and text.endswith(quote_char):
+            text = text[1:-1].strip()
+            break
+
+    return text
+
 def _post_quote(event, _ctx):
     try:
         body = json.loads(event.get("body") or "{}")
     except Exception:
         return _resp(400, {"error": "Invalid JSON"})
 
-    quote = (body.get("quote") or "").strip()
+    raw_quote = (body.get("quote") or "").strip()
+    quote = _normalize_quote(raw_quote)
+
     n = len(quote)
     if not (Config.MIN_INPUT_LENGTH <= n <= Config.MAX_INPUT_LENGTH):
         return _resp(400, {"error": f"Quote length must be between {Config.MIN_INPUT_LENGTH} and {Config.MAX_INPUT_LENGTH}."})

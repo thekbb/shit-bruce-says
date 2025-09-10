@@ -69,7 +69,7 @@ const DOM = {
     article.innerHTML = `
       <h3 class="visually-hidden">Quote from ${formatEnglish(quote.createdAt)}</h3>
       <blockquote cite="#${quote.SK}">
-        <p>${escapeHtml(quote.quote)}</p>
+        <p>"${escapeHtml(quote.quote)}"</p>
         <footer>
           <cite>— Bruce</cite>
         </footer>
@@ -127,7 +127,6 @@ function renderQuotes(items) {
 }
 
 function needsMoreContent() {
-  // Check if the content is shorter than the viewport, meaning no scrollbar exists
   const documentHeight = Math.max(
     document.body.scrollHeight,
     document.body.offsetHeight,
@@ -137,7 +136,6 @@ function needsMoreContent() {
   );
   const viewportHeight = window.innerHeight;
 
-  // Add a small buffer (100px) to ensure scrolling is definitely possible
   return documentHeight <= viewportHeight + 100;
 }
 
@@ -146,17 +144,14 @@ async function loadInitial() {
   State.setLoading(true);
 
   try {
-    // Load the first page
     const data = await API.fetchQuotes();
     State.container.innerHTML = '';
     const items = transform(data);
     const elements = renderQuotes(items);
     elements.forEach(el => State.container.appendChild(el));
 
-    // Keep loading more content until we have enough to enable scrolling
-    // or until we've loaded all available quotes
     let loadAttempts = 0;
-    const maxLoadAttempts = 5; // Prevent infinite loops
+    const maxLoadAttempts = 5;
 
     while (needsMoreContent() && State.hasMore && loadAttempts < maxLoadAttempts) {
       loadAttempts++;
@@ -167,7 +162,6 @@ async function loadInitial() {
       const moreElements = renderQuotes(moreItems);
       moreElements.forEach(el => State.container.appendChild(el));
 
-      // Small delay to allow DOM to update before checking height again
       await new Promise(resolve => setTimeout(resolve, 50));
     }
 
