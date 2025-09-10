@@ -99,49 +99,65 @@ const DOM = {
   }
 };
 
-let container;
-let cursor = null;
-let hasMore = true;
-let loading = false;
-let infScroll;
+const State = {
+  container: null,
+  cursor: null,
+  hasMore: true,
+  loading: false,
+  infScroll: null,
+
+  reset() {
+    this.cursor = null;
+    this.hasMore = true;
+    this.loading = false;
+  },
+
+  setLoading(isLoading) {
+    this.loading = isLoading;
+  },
+
+  updateFromApiResponse(data) {
+    this.cursor = data.cursor || null;
+    this.hasMore = Boolean(data.cursor);
+  }
+};
 
 function renderQuotes(items) {
   return (items || []).map(quote => DOM.createQuoteElement(quote));
 }
 
 async function loadInitial() {
-  if (loading) return;
-  loading = true;
+  if (State.loading) return;
+  State.setLoading(true);
 
   try {
     const data = await API.fetchQuotes();
-    container.innerHTML = '';
+    State.container.innerHTML = '';
     const items = transform(data);
     const elements = renderQuotes(items);
-    elements.forEach(el => container.appendChild(el));
+    elements.forEach(el => State.container.appendChild(el));
 
   } catch (err) {
     console.error(err);
-    container.innerHTML = DOM.createErrorMessage(err.message || String(err));
-    hasMore = false;
+    State.container.innerHTML = DOM.createErrorMessage(err.message || String(err));
+    State.hasMore = false;
   } finally {
-    loading = false;
+    State.setLoading(false);
   }
 }
 
 function getPath() {
-  if (!hasMore) return false;
+  if (!State.hasMore) return false;
 
   const url = new URL(`${CONFIG.API_BASE}/quotes`);
   url.searchParams.set("limit", String(CONFIG.PAGE_SIZE));
-  if (cursor) url.searchParams.set("cursor", JSON.stringify(cursor));
+  if (State.cursor) url.searchParams.set("cursor", JSON.stringify(State.cursor));
 
   return url.toString();
 }
 
 function transform(data) {
-  cursor = data.cursor || null;
-  hasMore = Boolean(data.cursor);
+  State.updateFromApiResponse(data);
   return data.items || [];
 }
 
@@ -163,12 +179,12 @@ async function ensureAnchorVisible() {
 
   if (tryHighlight()) return;
 
-  for (let i = 0; i < CONFIG.MAX_PAGES_FOR_ANCHOR && hasMore; i += 1) {
+  for (let i = 0; i < CONFIG.MAX_PAGES_FOR_ANCHOR && State.hasMore; i += 1) {
     try {
-      const data = await API.fetchQuotes(cursor);
+      const data = await API.fetchQuotes(State.cursor);
       const items = transform(data);
       const elements = renderQuotes(items);
-      elements.forEach(el => container.appendChild(el));
+      elements.forEach(el => State.container.appendChild(el));
 
       if (tryHighlight()) return;
     } catch (err) {
@@ -190,8 +206,7 @@ function initFormHandler() {
       await API.createQuote(quote);
       input.value = "";
 
-      cursor = null;
-      hasMore = true;
+      State.reset();
       await loadInitial();
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err) {
@@ -202,14 +217,14 @@ function initFormHandler() {
 }
 
 function initializeApp() {
-  container = document.getElementById("quotes");
-  if (!container) return;
+  State.container = document.getElementById("quotes");
+  if (!State.container) return;
 
-  container.innerHTML = DOM.createLoadingSkeleton();
+  State.container.innerHTML = DOM.createLoadingSkeleton();
 
   initFormHandler();
 
-  infScroll = new InfiniteScroll(container, {
+  State.infScroll = new InfiniteScroll(State.container, {
     path: getPath,
     responseBody: 'json',
     outlayer: false,
@@ -217,21 +232,21 @@ function initializeApp() {
     scrollThreshold: CONFIG.SCROLL_THRESHOLD
   });
 
-  infScroll.on('request', () => {
-    loading = true;
+  State.infScroll.on('request', () => {
+    State.setLoading(true);
   });
 
-  infScroll.on('load', (data) => {
+  State.infScroll.on('load', (data) => {
     const items = transform(data);
     const elements = renderQuotes(items);
-    elements.forEach(el => container.appendChild(el));
-    loading = false;
+    elements.forEach(el => State.container.appendChild(el));
+    State.setLoading(false);
   });
 
-  infScroll.on('error', (error) => {
+  State.infScroll.on('error', (error) => {
     console.error(error);
-    hasMore = false;
-    loading = false;
+    State.hasMore = false;
+    State.setLoading(false);
   });
 
   loadInitial();
@@ -244,7 +259,7 @@ if (document.readyState === 'loading') {
 }
 
 window.addEventListener("load", async () => {
-  if (container) {
+  if (State.container) {
     await ensureAnchorVisible();
   }
 });
