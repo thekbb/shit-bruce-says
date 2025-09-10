@@ -30,6 +30,10 @@ header .tagline {
   font-style: italic;
 }
 
+.form {
+  margin-bottom: 2rem;
+}
+
 #wrapper {
   width: 100%;
   max-width: 700px;

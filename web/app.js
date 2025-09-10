@@ -39,17 +39,22 @@ function renderQuotes(items, { append = true } = {}) {
   const fragment = document.createDocumentFragment();
 
   for (const q of (items || [])) {
-    const div = document.createElement("div");
-    div.className = "quote";
-    div.id = q.SK;
-    div.innerHTML = `
-      <h2>Bruce Said:</h2>
-      <blockquote><p>${escapeHtml(q.quote)}</p></blockquote>
-      <p class="timestamp">
-        <a href="#${q.SK}">${formatEnglish(q.createdAt)}</a>
-      </p>
+    const article = document.createElement("article");
+    article.className = "quote";
+    article.id = q.SK;
+    article.innerHTML = `
+      <h3 class="visually-hidden">Quote from ${formatEnglish(q.createdAt)}</h3>
+      <blockquote cite="#${q.SK}">
+        <p>${escapeHtml(q.quote)}</p>
+        <footer>
+          <cite>— Bruce</cite>
+        </footer>
+      </blockquote>
+      <time class="timestamp" datetime="${q.createdAt}">
+        <a href="#${q.SK}" aria-label="Link to this quote">${formatEnglish(q.createdAt)}</a>
+      </time>
     `;
-    fragment.appendChild(div);
+    fragment.appendChild(article);
   }
 
   requestAnimationFrame(() => {
@@ -275,7 +280,6 @@ function initializeApp() {
 
         clearTimeout(scrollTimeout);
 
-        // Faster response for high-velocity scrolling
         const timeout = scrollVelocity > 100 ? 50 : 100;
 
         scrollTimeout = setTimeout(async () => {
