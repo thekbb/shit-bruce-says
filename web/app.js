@@ -1,10 +1,10 @@
 const CONFIG = {
-  CONFIG.API_BASE: (() => {
+  API_BASE: (() => {
     const raw = document.querySelector('meta[name="api-base"]')?.content || '';
     return raw.replace(/\/$/, '');
   })(),
-  CONFIG.PAGE_SIZE: 10,
-  CONFIG.MAX_PAGES_FOR_ANCHOR: 30,
+  PAGE_SIZE: 10,
+  MAX_PAGES_FOR_ANCHOR: 30,
   SCROLL_THRESHOLD: 400,
   HIGHLIGHT_DURATION: 3000,
   THROTTLE_DELAY: 100
