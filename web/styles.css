@@ -9,6 +9,27 @@ body {
   justify-items: center;
 }
 
+/* Accessibility: Hide content visually but keep it for screen readers */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Header styling */
+header .tagline {
+  font-size: 0.9em;
+  color: #666;
+  margin: -0.5rem 0 1rem 0;
+  font-style: italic;
+}
+
 #wrapper {
   width: 100%;
   max-width: 700px;

@@ -40,14 +40,29 @@
 </head>
 <body>
   <div id="wrapper">
-    <h1>Shit Bruce Says</h1>
-    <div class="form">
-      <form id="quote-form">
-        <input type="text" id="quote" minlength="5" maxlength="300" name="quote" required />
-        <input type="submit" value="Submit"/>
-      </form>
-    </div>
-    <div class="quotes" id="quotes"></div>
+    <header>
+      <h1>Shit Bruce Says</h1>
+      <p class="tagline">A collection of memorable quotes and sayings from Bruce</p>
+    </header>
+
+    <main>
+      <section class="form" aria-label="Add a new quote">
+        <h2 class="visually-hidden">Add a New Quote</h2>
+        <form id="quote-form" role="form">
+          <label for="quote" class="visually-hidden">Enter a Bruce quote</label>
+          <input type="text" id="quote" minlength="5" maxlength="300" name="quote"
+                 placeholder="What did Bruce say?" required
+                 aria-describedby="quote-help" />
+          <small id="quote-help" class="visually-hidden">Enter a memorable quote from Bruce (5-300 characters)</small>
+          <input type="submit" value="Submit Quote"/>
+        </form>
+      </section>
+
+      <section class="quotes" id="quotes" aria-label="Bruce quotes" role="feed">
+        <h2 class="visually-hidden">All Quotes</h2>
+        <!-- Quotes will be loaded here -->
+      </section>
+    </main>
   </div>
 </body>
 </html>
