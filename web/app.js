@@ -126,16 +126,50 @@ function renderQuotes(items) {
   return (items || []).map(quote => DOM.createQuoteElement(quote));
 }
 
+function needsMoreContent() {
+  // Check if the content is shorter than the viewport, meaning no scrollbar exists
+  const documentHeight = Math.max(
+    document.body.scrollHeight,
+    document.body.offsetHeight,
+    document.documentElement.clientHeight,
+    document.documentElement.scrollHeight,
+    document.documentElement.offsetHeight
+  );
+  const viewportHeight = window.innerHeight;
+
+  // Add a small buffer (100px) to ensure scrolling is definitely possible
+  return documentHeight <= viewportHeight + 100;
+}
+
 async function loadInitial() {
   if (State.loading) return;
   State.setLoading(true);
 
   try {
+    // Load the first page
     const data = await API.fetchQuotes();
     State.container.innerHTML = '';
     const items = transform(data);
     const elements = renderQuotes(items);
     elements.forEach(el => State.container.appendChild(el));
+
+    // Keep loading more content until we have enough to enable scrolling
+    // or until we've loaded all available quotes
+    let loadAttempts = 0;
+    const maxLoadAttempts = 5; // Prevent infinite loops
+
+    while (needsMoreContent() && State.hasMore && loadAttempts < maxLoadAttempts) {
+      loadAttempts++;
+      console.log(`Loading additional content (attempt ${loadAttempts}) to ensure scrolling is possible`);
+
+      const moreData = await API.fetchQuotes(State.cursor);
+      const moreItems = transform(moreData);
+      const moreElements = renderQuotes(moreItems);
+      moreElements.forEach(el => State.container.appendChild(el));
+
+      // Small delay to allow DOM to update before checking height again
+      await new Promise(resolve => setTimeout(resolve, 50));
+    }
 
   } catch (err) {
     console.error(err);
@@ -194,9 +228,8 @@ async function ensureAnchorVisible() {
   }
 }
 
-function initFormHandler() {
-  const form = document.getElementById("quote-form");
-  form.addEventListener("submit", async (e) => {
+const EventHandlers = {
+  async handleFormSubmit(e) {
     e.preventDefault();
     const input = document.getElementById("quote");
     const quote = input.value.trim();
@@ -213,7 +246,43 @@ function initFormHandler() {
       alert(err.message || "Failed to add quote.");
       console.error(err);
     }
+  },
+
+  handleInfiniteScrollRequest() {
+    State.setLoading(true);
+  },
+
+  handleInfiniteScrollLoad(data) {
+    const items = transform(data);
+    const elements = renderQuotes(items);
+    elements.forEach(el => State.container.appendChild(el));
+    State.setLoading(false);
+  },
+
+  handleInfiniteScrollError(error) {
+    console.error(error);
+    State.hasMore = false;
+    State.setLoading(false);
+  }
+};
+
+function initFormHandler() {
+  const form = document.getElementById("quote-form");
+  form.addEventListener("submit", EventHandlers.handleFormSubmit);
+}
+
+function initInfiniteScroll() {
+  State.infScroll = new InfiniteScroll(State.container, {
+    path: getPath,
+    responseBody: 'json',
+    outlayer: false,
+    loadOnScroll: true,
+    scrollThreshold: CONFIG.SCROLL_THRESHOLD
   });
+
+  State.infScroll.on('request', EventHandlers.handleInfiniteScrollRequest);
+  State.infScroll.on('load', EventHandlers.handleInfiniteScrollLoad);
+  State.infScroll.on('error', EventHandlers.handleInfiniteScrollError);
 }
 
 function initializeApp() {
@@ -223,32 +292,7 @@ function initializeApp() {
   State.container.innerHTML = DOM.createLoadingSkeleton();
 
   initFormHandler();
-
-  State.infScroll = new InfiniteScroll(State.container, {
-    path: getPath,
-    responseBody: 'json',
-    outlayer: false,
-    loadOnScroll: true,
-    scrollThreshold: CONFIG.SCROLL_THRESHOLD
-  });
-
-  State.infScroll.on('request', () => {
-    State.setLoading(true);
-  });
-
-  State.infScroll.on('load', (data) => {
-    const items = transform(data);
-    const elements = renderQuotes(items);
-    elements.forEach(el => State.container.appendChild(el));
-    State.setLoading(false);
-  });
-
-  State.infScroll.on('error', (error) => {
-    console.error(error);
-    State.hasMore = false;
-    State.setLoading(false);
-  });
-
+  initInfiniteScroll();
   loadInitial();
 }
 
