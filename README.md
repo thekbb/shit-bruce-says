@@ -19,7 +19,7 @@ make dev
 
 This will:
 
-1. Start **DynamoDB Local** (port 8000) and **nginx** (serves `./web` on port 8080) via `docker compose up -d`.
+1. Start **DynamoDB Local** (port `8000`) and **nginx** (serves `./web` on port `8080`) via `docker compose up -d`.
 2. (Re)create the DynamoDB table `bruce-quotes` locally.
 3. Render `web/index.html` from `web/index.html.tpl` pointing to **`http://127.0.0.1:3000`**.
 4. Run **SAM** (Lambda/API) on the same Docker network **in the background**.
