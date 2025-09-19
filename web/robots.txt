@@ -1,12 +1,16 @@
 User-agent: *
 Allow: /
+Allow: /seo.html
 
-# Sitemap
-Sitemap: https://shitbrucesays.com/sitemap.xml
+Sitemap: https://shitbrucesays.co.uk/sitemap.xml
 
-# Allow common crawlers
 User-agent: Googlebot
 Allow: /
+Allow: /seo.html
 
 User-agent: Bingbot
 Allow: /
+Allow: /seo.html
+
+User-agent: *
+Crawl-delay: 1

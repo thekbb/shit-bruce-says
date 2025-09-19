@@ -29,6 +29,9 @@ table: wait-ddb
 render:
 	python tools/render_index.py --api $(API_URL)
 
+seo:
+	python3 tools/generate_seo_page.py --output web/seo.html
+
 sam-fg:
 	DOCKER_HOST="$(DOCKER_HOST_VAL)" sam build --use-container
 	DOCKER_HOST="$(DOCKER_HOST_VAL)" sam local start-api --docker-network $(SAM_NET) --warm-containers EAGER

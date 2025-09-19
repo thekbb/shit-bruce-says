@@ -23,6 +23,8 @@ build/
 .coverage
 coverage.xml
 web/index.html
+web/sitemap.xml
+web/seo.html
 
 # terrorform
 .terraform/

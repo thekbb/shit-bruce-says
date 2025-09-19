@@ -72,3 +72,14 @@ resource "aws_s3_object" "sitemap" {
   cache_control = "public, max-age=86400"
   etag          = filemd5("${path.module}/web/sitemap.xml")
 }
+
+resource "aws_s3_object" "seo_page" {
+  count = fileexists("${path.module}/web/seo.html") ? 1 : 0
+
+  bucket        = aws_s3_bucket.site.id
+  key           = "seo.html"
+  source        = "${path.module}/web/seo.html"
+  content_type  = "text/html; charset=utf-8"
+  cache_control = "public, max-age=3600"
+  etag          = filemd5("${path.module}/web/seo.html")
+}
