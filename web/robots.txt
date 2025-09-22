@@ -11,6 +11,3 @@ Allow: /seo.html
 User-agent: Bingbot
 Allow: /
 Allow: /seo.html
-
-User-agent: *
-Crawl-delay: 1
