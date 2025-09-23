@@ -32,6 +32,9 @@ render:
 seo:
 	python3 tools/generate_seo_page.py --output web/seo.html
 
+quote-pages:
+	python3 tools/generate_quote_pages.py
+
 sam-fg:
 	DOCKER_HOST="$(DOCKER_HOST_VAL)" sam build --use-container
 	DOCKER_HOST="$(DOCKER_HOST_VAL)" sam local start-api --docker-network $(SAM_NET) --warm-containers EAGER

@@ -15,6 +15,10 @@ function escapeHtml(text) {
   return text.replace(/[&<>"']/g, (m) => map[m]);
 }
 
+function escapeJs(text) {
+  return JSON.stringify(text).slice(1, -1);
+}
+
 function formatEnglish(dt) {
   return new Date(dt).toLocaleString("en-US", {
     year: "numeric",
@@ -74,9 +78,22 @@ const DOM = {
           <cite>— Bruce</cite>
         </footer>
       </blockquote>
-      <time class="timestamp" datetime="${quote.createdAt}">
-        <a href="#${quote.SK}" aria-label="Link to this quote">${formatEnglish(quote.createdAt)}</a>
-      </time>
+      <div class="quote-meta">
+        <time class="timestamp" datetime="${quote.createdAt}">
+          <a href="#${quote.SK}" aria-label="Link to this quote">${formatEnglish(quote.createdAt)}</a>
+        </time>
+        <div class="share-buttons">
+          <button class="share-btn" data-quote-id="${quote.SK}" data-quote-text="${escapeHtml(quote.quote)}" data-platform="linkedin" title="Share on LinkedIn">
+            <i class="fab fa-linkedin"></i>
+          </button>
+          <button class="share-btn" data-quote-id="${quote.SK}" data-quote-text="${escapeHtml(quote.quote)}" data-platform="bluesky" title="Share on Bluesky">
+            <i class="fas fa-cloud"></i>
+          </button>
+          <button class="share-btn copy-btn" data-quote-id="${quote.SK}" title="Copy link">
+            <i class="fas fa-link"></i>
+          </button>
+        </div>
+      </div>
     `;
     return article;
   },
@@ -288,13 +305,109 @@ function initializeApp() {
 
   initFormHandler();
   initInfiniteScroll();
+  setupShareButtonHandlers();
   loadInitial();
+}
+
+function setupShareButtonHandlers() {
+  State.container.addEventListener('click', (event) => {
+    const button = event.target.closest('.share-btn');
+    if (!button) return;
+
+    event.preventDefault();
+
+    const quoteId = button.dataset.quoteId;
+    const quoteText = button.dataset.quoteText;
+    const platform = button.dataset.platform;
+
+    if (button.classList.contains('copy-btn')) {
+      copyQuoteUrl(quoteId);
+    } else if (platform) {
+      shareQuote(quoteId, quoteText, platform);
+    }
+  });
 }
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initializeApp);
 } else {
   initializeApp();
+}
+
+function shareQuote(quoteId, quoteText, platform) {
+  const quoteUrl = `${window.location.origin}/quote/${quoteId}.html`;
+  const encodedUrl = encodeURIComponent(quoteUrl);
+  const encodedText = encodeURIComponent(`"${quoteText}"\n— Bruce`);
+
+  const shareUrls = {
+    linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`,
+    bluesky: `https://bsky.app/intent/compose?text=${encodedText}%20${encodedUrl}`,
+    facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`,
+    whatsapp: `https://wa.me/?text=${encodedText}%20${encodedUrl}`
+  };
+
+  if (shareUrls[platform]) {
+    const popup = window.open(shareUrls[platform], '_blank', 'width=600,height=400');
+    if (!popup || popup.closed || typeof popup.closed == 'undefined') {
+      window.location.href = shareUrls[platform];
+    }
+  }
+}
+
+function copyQuoteUrl(quoteId) {
+  const quoteUrl = `${window.location.origin}/quote/${quoteId}.html`;
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(quoteUrl).then(() => {
+      showCopyFeedback();
+    }).catch(() => {
+      fallbackCopyToClipboard(quoteUrl);
+    });
+  } else {
+    fallbackCopyToClipboard(quoteUrl);
+  }
+}
+
+function fallbackCopyToClipboard(text) {
+  const textArea = document.createElement("textarea");
+  textArea.value = text;
+  textArea.style.position = "fixed";
+  textArea.style.left = "-999999px";
+  textArea.style.top = "-999999px";
+  document.body.appendChild(textArea);
+  textArea.focus();
+  textArea.select();
+
+  try {
+    document.execCommand('copy');
+    showCopyFeedback();
+  } catch (err) {
+    console.error('Failed to copy: ', err);
+  }
+
+  document.body.removeChild(textArea);
+}
+
+function showCopyFeedback() {
+  const feedback = document.createElement('div');
+  feedback.textContent = 'Link copied!';
+  feedback.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: #007acc;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 4px;
+    z-index: 1000;
+    font-size: 14px;
+  `;
+
+  document.body.appendChild(feedback);
+
+  setTimeout(() => {
+    document.body.removeChild(feedback);
+  }, 2000);
 }
 
 window.addEventListener("load", async () => {

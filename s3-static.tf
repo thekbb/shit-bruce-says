@@ -83,3 +83,15 @@ resource "aws_s3_object" "seo_page" {
   cache_control = "public, max-age=3600"
   etag          = filemd5("${path.module}/web/seo.html")
 }
+
+# Individual quote pages for social sharing
+resource "aws_s3_object" "quote_pages" {
+  for_each = fileset("${path.module}/web/quote", "*.html")
+
+  bucket        = aws_s3_bucket.site.id
+  key           = "quote/${each.value}"
+  source        = "${path.module}/web/quote/${each.value}"
+  content_type  = "text/html; charset=utf-8"
+  cache_control = "public, max-age=86400"
+  etag          = filemd5("${path.module}/web/quote/${each.value}")
+}

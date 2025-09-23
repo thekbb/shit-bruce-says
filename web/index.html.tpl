@@ -32,7 +32,7 @@
   <meta property="og:image:type" content="image/svg+xml">
   <meta property="og:locale" content="en_US">
 
-  <!-- Twitter (Because nobody calls it X. Ever.)-->
+  <!-- Twitter Card (legacy support) -->
   <meta property="twitter:card" content="summary">
   <meta property="twitter:url" content="https://shitbrucesays.co.uk/">
   <meta property="twitter:title" content="Shit Bruce Says">
@@ -41,6 +41,7 @@
 
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://unpkg.com/infinite-scroll@4/dist/infinite-scroll.pkgd.min.js"></script>
   <script src="app.js" defer></script>
   <title>Shit Bruce Says</title>

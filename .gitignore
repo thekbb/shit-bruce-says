@@ -25,6 +25,7 @@ coverage.xml
 web/index.html
 web/sitemap.xml
 web/seo.html
+web/quote/
 
 # terrorform
 .terraform/
