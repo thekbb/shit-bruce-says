@@ -85,6 +85,7 @@ input[type="submit"] {
   display: grid;
   grid-template-columns: 1fr;
   gap: 1rem;
+  min-height: 200px; /* Reserve space to prevent layout shift */
 }
 
 .quote {
@@ -199,6 +200,9 @@ blockquote {
 }
 
 .skeleton-quote {
+  border-bottom: 1px solid #ccc;
+  padding-bottom: 10px;
+  margin-bottom: 1rem;
   animation: skeleton-pulse 1.5s ease-in-out infinite alternate;
 }
 

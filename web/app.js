@@ -107,6 +107,17 @@ const DOM = {
           <div class="skeleton-line short"></div>
           <div class="skeleton-timestamp"></div>
         </div>
+        <div class="quote skeleton-quote">
+          <div class="skeleton-line"></div>
+          <div class="skeleton-line"></div>
+          <div class="skeleton-line short"></div>
+          <div class="skeleton-timestamp"></div>
+        </div>
+        <div class="quote skeleton-quote">
+          <div class="skeleton-line"></div>
+          <div class="skeleton-line short"></div>
+          <div class="skeleton-timestamp"></div>
+        </div>
       </div>
     `;
   },
