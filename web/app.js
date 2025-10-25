@@ -173,9 +173,10 @@ async function loadInitial() {
 
   try {
     const data = await API.fetchQuotes();
-    State.container.innerHTML = '';
     const items = transform(data);
     const elements = renderQuotes(items);
+
+    State.container.innerHTML = '';
     elements.forEach(el => State.container.appendChild(el));
 
     let loadAttempts = 0;

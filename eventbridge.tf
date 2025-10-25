@@ -32,7 +32,7 @@ resource "aws_pipes_pipe" "dynamodb_to_eventbridge" {
   role_arn = aws_iam_role.eventbridge_pipe_role.arn
 
   source = aws_dynamodb_table.quotes.stream_arn
-  target = "arn:aws:events:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:event-bus/default"
+  target = "arn:aws:events:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:event-bus/default"
 
   source_parameters {
     dynamodb_stream_parameters {
@@ -89,7 +89,7 @@ resource "aws_iam_policy" "eventbridge_pipe_policy" {
         Action = [
           "events:PutEvents"
         ]
-        Resource = "arn:aws:events:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:event-bus/default"
+        Resource = "arn:aws:events:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:event-bus/default"
       }
     ]
   })

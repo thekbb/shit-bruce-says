@@ -22,7 +22,6 @@ body {
   border: 0;
 }
 
-/* Header styling */
 header .tagline {
   font-size: 0.9em;
   color: #666;
@@ -85,7 +84,7 @@ input[type="submit"] {
   display: grid;
   grid-template-columns: 1fr;
   gap: 1rem;
-  min-height: 200px; /* Reserve space to prevent layout shift */
+  min-height: 200px;
 }
 
 .quote {
@@ -161,8 +160,8 @@ blockquote {
   blockquote {
     max-width: 100%;
     padding: 0.75em;
-    border-left: #bbb 3px solid; /* Thicker border for mobile */
-    border-right: none; /* Remove right border on mobile */
+    border-left: #bbb 3px solid;
+    border-right: none;
   }
 
   h1 {
@@ -194,7 +193,6 @@ blockquote {
   }
 }
 
-/* Loading skeleton styles */
 .loading-skeleton {
   opacity: 0.7;
 }

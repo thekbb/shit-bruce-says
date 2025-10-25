@@ -66,7 +66,7 @@ resource "aws_lambda_function" "page_generator" {
 
   environment {
     variables = {
-      BUCKET_NAME = var.domain_name
+      BUCKET_NAME = aws_s3_bucket.site.bucket
       DOMAIN      = var.domain_name
       TABLE_NAME  = aws_dynamodb_table.quotes.name
     }
