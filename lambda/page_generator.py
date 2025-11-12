@@ -7,7 +7,6 @@ Triggered by DynamoDB streams via EventBridge.
 import json
 import boto3
 import os
-import requests
 from datetime import datetime
 from typing import Dict, List, Any
 
@@ -69,7 +68,7 @@ def format_date(iso_string: str) -> str:
     try:
         dt = datetime.fromisoformat(iso_string.replace('Z', '+00:00'))
         return dt.strftime('%B %d, %Y at %H:%M:%S')
-    except:
+    except (ValueError, AttributeError):
         return iso_string
 
 def generate_quote_page(dynamodb_item: Dict[str, Any]):

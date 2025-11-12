@@ -79,9 +79,9 @@ const DOM = {
         </footer>
       </blockquote>
       <div class="quote-meta">
-        <time class="timestamp" datetime="${quote.createdAt}">
-          <a href="#${quote.SK}" aria-label="Link to this quote">${formatEnglish(quote.createdAt)}</a>
-        </time>
+      <time class="timestamp" datetime="${quote.createdAt}">
+        <a href="#${quote.SK}" aria-label="Link to this quote">${formatEnglish(quote.createdAt)}</a>
+      </time>
         <div class="share-buttons">
           <button class="share-btn" data-quote-id="${quote.SK}" data-quote-text="${escapeHtml(quote.quote)}" data-platform="linkedin" title="Share on LinkedIn">
             <i class="fab fa-linkedin"></i>
@@ -100,25 +100,17 @@ const DOM = {
 
   createLoadingSkeleton() {
     return `
-      <div class="loading-skeleton">
-        <div class="quote skeleton-quote">
-          <h2>Loading quotes...</h2>
-          <div class="skeleton-line"></div>
-          <div class="skeleton-line short"></div>
-          <div class="skeleton-timestamp"></div>
+      <article class="quote">
+        <h3 class="visually-hidden">Loading quotes...</h3>
+        <blockquote>
+          <p class="skeleton-line"></p>
+          <footer><cite class="skeleton-line short"></cite></footer>
+        </blockquote>
+        <div class="quote-meta">
+          <time class="skeleton-timestamp"></time>
+          <div class="share-buttons"></div>
         </div>
-        <div class="quote skeleton-quote">
-          <div class="skeleton-line"></div>
-          <div class="skeleton-line"></div>
-          <div class="skeleton-line short"></div>
-          <div class="skeleton-timestamp"></div>
-        </div>
-        <div class="quote skeleton-quote">
-          <div class="skeleton-line"></div>
-          <div class="skeleton-line short"></div>
-          <div class="skeleton-timestamp"></div>
-        </div>
-      </div>
+      </article>
     `;
   },
 
@@ -154,18 +146,6 @@ function renderQuotes(items) {
   return (items || []).map(quote => DOM.createQuoteElement(quote));
 }
 
-function needsMoreContent() {
-  const documentHeight = Math.max(
-    document.body.scrollHeight,
-    document.body.offsetHeight,
-    document.documentElement.clientHeight,
-    document.documentElement.scrollHeight,
-    document.documentElement.offsetHeight
-  );
-  const viewportHeight = window.innerHeight;
-
-  return documentHeight <= viewportHeight + 100;
-}
 
 async function loadInitial() {
   if (State.loading) return;
@@ -178,21 +158,6 @@ async function loadInitial() {
 
     State.container.innerHTML = '';
     elements.forEach(el => State.container.appendChild(el));
-
-    let loadAttempts = 0;
-    const maxLoadAttempts = 5;
-
-    while (needsMoreContent() && State.hasMore && loadAttempts < maxLoadAttempts) {
-      loadAttempts++;
-      console.log(`Loading additional content (attempt ${loadAttempts}) to ensure scrolling is possible`);
-
-      const moreData = await API.fetchQuotes(State.cursor);
-      const moreItems = transform(moreData);
-      const moreElements = renderQuotes(moreItems);
-      moreElements.forEach(el => State.container.appendChild(el));
-
-      await new Promise(resolve => setTimeout(resolve, 50));
-    }
 
   } catch (err) {
     console.error(err);

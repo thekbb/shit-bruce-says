@@ -29,25 +29,18 @@ header .tagline {
   font-style: italic;
 }
 
-.form {
-  margin-bottom: 2rem;
-}
-
 #wrapper {
   width: 100%;
   max-width: 700px;
   margin: 0 auto;
   padding: 1rem;
   box-sizing: border-box;
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 1rem;
-  justify-items: center;
 }
 
 .form {
   width: 100%;
   max-width: 600px;
+  margin: 0 auto 2rem auto;
   padding: 1em 0.5em;
   border: solid 1px #bbb;
   background-color: #f4f4f4;
@@ -81,10 +74,10 @@ input[type="submit"] {
 #quotes {
   width: 100%;
   max-width: 700px;
+  margin: 0 auto;
   display: grid;
   grid-template-columns: 1fr;
   gap: 1rem;
-  min-height: 200px;
 }
 
 .quote {
@@ -100,7 +93,6 @@ h2 {
   margin: 0;
   padding: 0;
   font-size: 1.1em;
-  justify-self: start;
 }
 
 blockquote {
@@ -109,18 +101,16 @@ blockquote {
   padding: 0.5em;
   background-color: #f7f7f7;
   font-weight: bold;
-  margin: 0;
+  margin: 0 auto;
   width: 100%;
   max-width: 600px;
-  justify-self: center;
   box-sizing: border-box;
 }
 
 .timestamp {
   color: #D3D3D3;
   cursor: pointer;
-  margin-top: 4px;
-  justify-self: start;
+  flex-shrink: 0;
 }
 
 .timestamp a {
@@ -131,6 +121,11 @@ blockquote {
 .quote.highlight {
   background-color: #ffffcc;
   transition: background-color 2s ease;
+}
+
+cite {
+  font-style: italic;
+  color: #666;
 }
 
 @media (max-width: 768px) {
@@ -193,24 +188,12 @@ blockquote {
   }
 }
 
-.loading-skeleton {
-  opacity: 0.7;
-}
-
-.skeleton-quote {
-  border-bottom: 1px solid #ccc;
-  padding-bottom: 10px;
-  margin-bottom: 1rem;
-  animation: skeleton-pulse 1.5s ease-in-out infinite alternate;
-}
-
 .skeleton-line {
-  height: 1.2rem;
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-  background-size: 200% 100%;
-  animation: skeleton-loading 1.5s infinite;
+  background: #f0f0f0;
   border-radius: 4px;
-  margin: 0.5rem 0;
+  height: 1.2em;
+  display: inline-block;
+  width: 100%;
 }
 
 .skeleton-line.short {
@@ -218,31 +201,11 @@ blockquote {
 }
 
 .skeleton-timestamp {
-  height: 0.9rem;
-  width: 40%;
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-  background-size: 200% 100%;
-  animation: skeleton-loading 1.5s infinite;
+  background: #f0f0f0;
   border-radius: 4px;
-  margin-top: 1rem;
-}
-
-@keyframes skeleton-loading {
-  0% {
-    background-position: 200% 0;
-  }
-  100% {
-    background-position: -200% 0;
-  }
-}
-
-@keyframes skeleton-pulse {
-  0% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0.4;
-  }
+  height: 1em;
+  width: 150px;
+  display: inline-block;
 }
 
 .quote-meta {
@@ -250,6 +213,12 @@ blockquote {
   justify-content: space-between;
   align-items: center;
   margin-top: 0.5rem;
+  width: 100%;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: calc(0.5em + 1px);
+  box-sizing: border-box;
 }
 
 .share-buttons {
@@ -257,6 +226,7 @@ blockquote {
   gap: 0.5rem;
   opacity: 0;
   transition: opacity 0.2s ease;
+  flex-shrink: 0;
 }
 
 .quote:hover .share-buttons {
@@ -267,7 +237,6 @@ blockquote {
   background: none;
   border: 1px solid #ccc;
   border-radius: 4px;
-  padding: 6px;
   cursor: pointer;
   color: #666;
   display: flex;
@@ -276,6 +245,7 @@ blockquote {
   transition: all 0.2s ease;
   width: 28px;
   height: 28px;
+  flex-shrink: 0;
 }
 
 .share-btn:hover {
