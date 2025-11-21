@@ -2,4 +2,5 @@
 lockfile = true
 
 [tools]
+python = "3.14.0"
 terraform = "1.13.5"

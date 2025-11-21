@@ -1,9 +1,3 @@
-#!/usr/bin/env python3
-"""
-Lambda function to auto-generate quote pages and SEO page when quotes are added/updated.
-Triggered by DynamoDB streams via EventBridge.
-"""
-
 import json
 import boto3
 import os
@@ -18,32 +12,27 @@ DOMAIN = os.environ['DOMAIN']
 TABLE_NAME = os.environ['TABLE_NAME']
 
 def handler(event, context):
-    """Handle DynamoDB stream events and generate pages."""
     print(f"Received event: {json.dumps(event, default=str)}")
 
-    for record in event.get('Records', []):
-        if record.get('eventSource') == 'aws:dynamodb':
-            event_name = record.get('eventName')
+    records = event.get('Records', [])
 
-            if event_name in ['INSERT', 'MODIFY']:
-                # New or updated quote
-                dynamodb_record = record.get('dynamodb', {})
-                new_image = dynamodb_record.get('NewImage', {})
+    for record in records:
+        event_name = record.get('eventName')
 
-                if new_image.get('PK', {}).get('S') == 'QUOTE':
-                    quote_id = new_image.get('SK', {}).get('S')
-                    print(f"Processing quote: {quote_id}")
+        if event_name in ['INSERT', 'MODIFY']:
+            dynamodb_record = record.get('dynamodb', {})
+            new_image = dynamodb_record.get('NewImage', {})
 
-                    # Generate individual quote page
-                    generate_quote_page(new_image)
+            if new_image and new_image.get('PK', {}).get('S') == 'QUOTE':
+                quote_id = new_image.get('SK', {}).get('S')
+                print(f"Processing quote: {quote_id}")
 
-                    # Regenerate SEO page with all quotes
-                    generate_seo_page()
+                generate_quote_page(new_image)
+                generate_seo_page()
 
     return {'statusCode': 200, 'body': json.dumps('Pages generated successfully')}
 
 def dynamodb_to_dict(dynamodb_item: Dict[str, Any]) -> Dict[str, Any]:
-    """Convert DynamoDB item format to regular dict."""
     result = {}
     for key, value in dynamodb_item.items():
         if 'S' in value:
@@ -52,11 +41,9 @@ def dynamodb_to_dict(dynamodb_item: Dict[str, Any]) -> Dict[str, Any]:
             result[key] = float(value['N'])
         elif 'B' in value:
             result[key] = value['B']
-        # Add other types as needed
     return result
 
 def escape_html(text: str) -> str:
-    """Escape HTML characters."""
     return (text.replace("&", "&amp;")
                .replace("<", "&lt;")
                .replace(">", "&gt;")
@@ -64,7 +51,6 @@ def escape_html(text: str) -> str:
                .replace("'", "&#039;"))
 
 def format_date(iso_string: str) -> str:
-    """Format ISO date for display."""
     try:
         dt = datetime.fromisoformat(iso_string.replace('Z', '+00:00'))
         return dt.strftime('%B %d, %Y at %H:%M:%S')
@@ -72,13 +58,10 @@ def format_date(iso_string: str) -> str:
         return iso_string
 
 def generate_quote_page(dynamodb_item: Dict[str, Any]):
-    """Generate and upload individual quote page."""
     quote = dynamodb_to_dict(dynamodb_item)
     quote_text = quote['quote']
     quote_id = quote['SK']
     created_at = quote['createdAt']
-
-    # Truncate quote for meta description if too long
     meta_quote = quote_text if len(quote_text) <= 150 else quote_text[:147] + "..."
 
     html_content = f'''<!DOCTYPE html>
@@ -111,13 +94,11 @@ def generate_quote_page(dynamodb_item: Dict[str, Any]):
     <meta property="twitter:description" content='Said on {format_date(created_at)} | Shit Bruce Says'>
     <meta property="twitter:image" content="https://{DOMAIN}/favicon.svg">
 
-    <!-- Canonical URL points to main site with hash -->
     <link rel="canonical" href="https://{DOMAIN}/#{quote_id}">
 
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <link rel="stylesheet" href="../styles.css">
 
-    <!-- Redirect humans to main site after social crawlers get metadata -->
     <script>
         if (!navigator.userAgent.includes('bot') &&
             !navigator.userAgent.includes('crawler') &&
@@ -161,7 +142,6 @@ def generate_quote_page(dynamodb_item: Dict[str, Any]):
 </body>
 </html>'''
 
-    # Upload to S3
     s3_client.put_object(
         Bucket=BUCKET_NAME,
         Key=f'quote/{quote_id}.html',
@@ -173,19 +153,17 @@ def generate_quote_page(dynamodb_item: Dict[str, Any]):
     print(f"Generated quote page: quote/{quote_id}.html")
 
 def fetch_all_quotes() -> List[Dict[str, Any]]:
-    """Fetch all quotes from DynamoDB."""
     table = dynamodb.Table(TABLE_NAME)
     quotes = []
 
     response = table.query(
         KeyConditionExpression='PK = :pk',
         ExpressionAttributeValues={':pk': 'QUOTE'},
-        ScanIndexForward=False  # Most recent first
+        ScanIndexForward=False
     )
 
     quotes.extend(response['Items'])
 
-    # Handle pagination
     while 'LastEvaluatedKey' in response:
         response = table.query(
             KeyConditionExpression='PK = :pk',
@@ -198,19 +176,15 @@ def fetch_all_quotes() -> List[Dict[str, Any]]:
     return quotes
 
 def generate_seo_page():
-    """Generate and upload SEO page with all quotes."""
     quotes = fetch_all_quotes()
 
     if not quotes:
         print("No quotes found for SEO page")
         return
 
-    # Get featured quote (most recent)
     featured_quote = quotes[0] if quotes else None
-
     current_date = datetime.now().strftime('%Y-%m-%d')
 
-    # Generate structured data for quotes
     structured_data = {
         "@context": "https://schema.org",
         "@type": "WebSite",
@@ -224,7 +198,7 @@ def generate_seo_page():
         }
     }
 
-    for i, quote in enumerate(quotes[:50]):  # Limit to 50 for performance
+    for i, quote in enumerate(quotes[:50]):
         structured_data["mainEntity"]["itemListElement"].append({
             "@type": "ListItem",
             "position": i + 1,
@@ -240,7 +214,6 @@ def generate_seo_page():
             }
         })
 
-    # Generate HTML content
     quotes_html = ""
     for quote in quotes:
         quotes_html += f'''
@@ -321,7 +294,6 @@ def generate_seo_page():
 </body>
 </html>'''
 
-    # Upload SEO page
     s3_client.put_object(
         Bucket=BUCKET_NAME,
         Key='seo.html',
@@ -330,7 +302,6 @@ def generate_seo_page():
         CacheControl='public, max-age=86400'
     )
 
-    # Generate and upload sitemap
     sitemap_xml = f'''<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>

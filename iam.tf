@@ -63,16 +63,23 @@ resource "aws_iam_policy" "page_generator_access" {
       {
         Effect = "Allow"
         Action = [
+          "dynamodb:DescribeStream",
+          "dynamodb:GetItem",
+          "dynamodb:GetRecords",
+          "dynamodb:GetShardIterator",
+          "dynamodb:ListStreams",
           "dynamodb:Query",
-          "dynamodb:GetItem"
         ]
-        Resource = aws_dynamodb_table.quotes.arn
+        Resource = [
+          aws_dynamodb_table.quotes.arn,
+          "${aws_dynamodb_table.quotes.arn}/*",
+        ]
       },
       {
         Effect = "Allow"
         Action = [
           "s3:PutObject",
-          "s3:PutObjectAcl"
+          "s3:PutObjectAcl",
         ]
         Resource = "${aws_s3_bucket.site.arn}/*"
       }

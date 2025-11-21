@@ -2,7 +2,6 @@ import os
 import json
 import re
 import time
-import base64
 from datetime import datetime, timezone
 
 import boto3
@@ -84,9 +83,17 @@ def _resp(code: int, obj: dict, headers: dict | None = None):
     return {"statusCode": code, "headers": h, "body": json.dumps(obj)}
 
 def _ulid() -> str:
-    ms = int(time.time() * 1000).to_bytes(6, "big")
-    rnd = os.urandom(10)
-    return base64.b32encode(ms + rnd).decode().rstrip("=").upper()
+    ENCODING = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
+    timestamp_ms = int(time.time() * 1000)
+    randomness = int.from_bytes(os.urandom(10), 'big')
+    ulid_int = (timestamp_ms << 80) | randomness
+
+    ulid_str = ""
+    for _ in range(26):
+        ulid_str = ENCODING[ulid_int & 0x1F] + ulid_str
+        ulid_int >>= 5
+
+    return ulid_str
 
 def _get_quotes(event, _ctx):
     qs = event.get("queryStringParameters") or {}
