@@ -24,10 +24,10 @@ wait-ddb:
 	exit 1
 
 table: wait-ddb
-	cd lambda && python dev_create_table.py
+	cd lambda && uv run dev_create_table.py
 
 render:
-	python tools/render_index.py --api $(API_URL)
+	python3 tools/render_index.py --api $(API_URL)
 
 sam-fg:
 	DOCKER_HOST="$(DOCKER_HOST_VAL)" sam build --use-container

@@ -4,7 +4,7 @@ Description: Local dev for Bruce Quotes (SAM + DynamoDB Local)
 
 Globals:
     Function:
-        Runtime: python3.12
+        Runtime: python3.14
         Architectures: [arm64]
         Timeout: 10
         MemorySize: 512
