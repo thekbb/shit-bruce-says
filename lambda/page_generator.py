@@ -302,6 +302,17 @@ def generate_seo_page():
         CacheControl='public, max-age=86400'
     )
 
+    quote_urls = ""
+    for quote in quotes:
+        quote_date = quote['createdAt'][:10]
+        quote_urls += f'''
+    <url>
+        <loc>https://{DOMAIN}/quote/{quote['SK']}.html</loc>
+        <lastmod>{quote_date}</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.7</priority>
+    </url>'''
+
     sitemap_xml = f'''<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
@@ -315,7 +326,7 @@ def generate_seo_page():
         <lastmod>{current_date}</lastmod>
         <changefreq>daily</changefreq>
         <priority>0.8</priority>
-    </url>
+    </url>{quote_urls}
 </urlset>
 '''
 
