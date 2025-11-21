@@ -31,7 +31,7 @@ resource "aws_lambda_function" "api" {
   function_name = "${local.name}-api"
   role          = aws_iam_role.lambda_exec.arn
   handler       = "app.handler"
-  runtime       = "python3.12"
+  runtime       = "python3.14"
   architectures = ["arm64"]
 
   filename         = data.archive_file.lambda_zip.output_path
@@ -58,7 +58,7 @@ resource "aws_lambda_function" "page_generator" {
   function_name = "${local.name}-page-generator"
   role          = aws_iam_role.page_generator_exec.arn
   handler       = "page_generator.handler"
-  runtime       = "python3.12"
+  runtime       = "python3.14"
   architectures = ["arm64"]
   timeout       = 60
 
