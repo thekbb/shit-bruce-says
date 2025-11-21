@@ -191,7 +191,7 @@ async function ensureAnchorVisible() {
   function tryHighlight() {
     const el = document.getElementById(anchorId);
     if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
       el.classList.add("highlight");
       setTimeout(() => el.classList.remove("highlight"), CONFIG.HIGHLIGHT_DURATION);
       return true;
