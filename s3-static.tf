@@ -3,7 +3,8 @@ resource "random_id" "suffix" {
 }
 
 resource "aws_s3_bucket" "site" {
-  bucket = "${local.name}-site-${random_id.suffix.hex}"
+  bucket        = "${local.name}-site-${random_id.suffix.hex}"
+  force_destroy = true
 }
 
 resource "aws_s3_bucket_ownership_controls" "site" {
