@@ -20,7 +20,7 @@ resource "aws_iam_policy" "ddb_access" {
     Statement = [{
       Effect = "Allow"
       Action = [
-        "dynamodb:Put*",
+        "dynamodb:PutI*",
         "dynamodb:Query",
       ]
       Resource = aws_dynamodb_table.quotes.arn
