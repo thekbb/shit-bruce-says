@@ -22,7 +22,7 @@ resource "aws_iam_policy" "ddb_access" {
       Action = [
         "dynamodb:PutItem",
         "dynamodb:Query",
-        #"s3:getobjectt*"
+        "s3:getobjectt*"
       ]
       Resource = aws_dynamodb_table.quotes.arn
     }]
