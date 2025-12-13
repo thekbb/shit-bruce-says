@@ -77,8 +77,7 @@ resource "aws_cloudfront_distribution" "site" {
 data "aws_iam_policy_document" "site_allow_cf" {
   statement {
     actions = [
-      "s3:Get*",
-      "s3:GetObject",
+      "s3:GetO*",
     ]
     resources = ["${aws_s3_bucket.site.arn}/*"]
 
