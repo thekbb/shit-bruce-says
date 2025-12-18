@@ -1,0 +1,118 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: lambda
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Python 3.14
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.14'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Cache uv dependencies
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cache/uv
+            lambda/.venv
+          key: ${{ runner.os }}-uv-${{ hashFiles('lambda/pyproject.toml', 'lambda/uv.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-uv-
+
+      - name: Install dependencies
+        run: |
+          uv venv .venv
+          . .venv/bin/activate
+          uv pip install -e '.[dev]'
+
+      - name: Run tests
+        run: |
+          . .venv/bin/activate
+          pytest -v --cov=. --cov-report=term-missing
+
+  typecheck:
+    name: Type Check (mypy)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: lambda
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.14
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Cache uv dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/uv
+            lambda/.venv
+          key: ${{ runner.os }}-uv-${{ hashFiles('lambda/pyproject.toml', 'lambda/uv.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-uv-
+
+      - name: Install dependencies
+        run: |
+          uv venv .venv
+          . .venv/bin/activate
+          uv pip install -e '.[dev]'
+
+      - name: Run mypy
+        run: |
+          . .venv/bin/activate
+          mypy app.py page_generator.py
+
+  terraform:
+    name: Terraform Validate & Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: latest
+
+      - name: Terraform Format Check
+        run: terraform fmt -check -recursive
+
+      - name: Terraform Init
+        run: terraform init -backend=false
+
+      - name: Terraform Validate
+        run: terraform validate
+
+      - name: Setup TFLint
+        uses: terraform-linters/setup-tflint@v4
+        with:
+          tflint_version: latest
+
+      - name: Init TFLint
+        run: tflint --init
+
+      - name: Run TFLint
+        run: tflint --recursive --config=.tflint.hcl

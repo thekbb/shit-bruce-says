@@ -4,7 +4,7 @@ SAM_PID        ?= .sam-local.pid
 SAM_LOG        ?= .sam-local.out
 DOCKER_HOST_VAL := $(shell docker context inspect --format '{{ (index .Endpoints "docker").Host }}' 2>/dev/null || echo unix://$(HOME)/.rd/docker.sock)
 
-.PHONY: dev dev-fg up down wait-ddb table render sam sam-fg stop logs test typecheck lint clean status doctor
+.PHONY: dev dev-fg up down wait-ddb table render sam sam-fg stop logs test typecheck tflint lint clean status doctor
 
 up:
 	docker compose up -d
@@ -74,7 +74,12 @@ typecheck:
 	cd lambda && uv venv .venv && . .venv/bin/activate && \
 	uv pip install -e '.[dev]' && mypy app.py page_generator.py
 
-lint: typecheck
+tflint:
+	@echo "Running tflint..."
+	tflint --init
+	tflint --recursive --config=.tflint.hcl
+
+lint: typecheck tflint
 	@echo "All checks passed!"
 
 status:
