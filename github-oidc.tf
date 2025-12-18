@@ -56,19 +56,13 @@ resource "aws_iam_role_policy" "github_terraform_plan" {
       {
         Effect = "Allow"
         Action = [
-          # Read-only Terraform state operations
-          "s3:GetObject",
-          "s3:ListBucket",
-
-          # DynamoDB state locking (read)
-          "dynamodb:GetItem",
-          "dynamodb:DescribeTable",
-
-          # Read AWS resources for plan
+          "acm:Describe*",
+          "acm:List*",
           "apigateway:GET",
           "cloudfront:Get*",
           "cloudfront:List*",
           "dynamodb:Describe*",
+          "dynamodb:GetItem",
           "dynamodb:List*",
           "iam:Get*",
           "iam:List*",
@@ -78,8 +72,6 @@ resource "aws_iam_role_policy" "github_terraform_plan" {
           "route53:List*",
           "s3:Get*",
           "s3:List*",
-          "acm:Describe*",
-          "acm:List*",
         ]
         Resource = "*"
       }
@@ -128,20 +120,15 @@ resource "aws_iam_role_policy" "github_terraform_apply" {
       {
         Effect = "Allow"
         Action = [
-          # Full Terraform state operations
-          "s3:*",
-
-          # DynamoDB state locking (read/write)
-          "dynamodb:*",
-
-          # Manage all AWS resources
+          "acm:*",
           "apigateway:*",
           "cloudfront:*",
+          "dynamodb:*",
           "iam:*",
           "lambda:*",
-          "route53:*",
-          "acm:*",
           "logs:*",
+          "route53:*",
+          "s3:*",
         ]
         Resource = "*"
       }
