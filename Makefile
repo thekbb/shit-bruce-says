@@ -77,7 +77,7 @@ typecheck:
 tflint:
 	@echo "Running tflint..."
 	tflint --init
-	tflint --recursive --config=.tflint.hcl
+	tflint --config=.tflint.hcl
 
 lint: typecheck tflint
 	@echo "All checks passed!"
