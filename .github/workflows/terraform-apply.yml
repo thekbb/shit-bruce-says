@@ -1,0 +1,68 @@
+name: Terraform Apply
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '*.tf'
+      - 'lambda/**'
+      - '.github/workflows/terraform-apply.yml'
+
+env:
+  AWS_REGION: us-east-2
+
+jobs:
+  apply:
+    name: Terraform Apply
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      id-token: write  # Required for OIDC
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: arn:aws:iam::628639830692:role/bruce-quotes-github-terraform-apply
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: latest
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Format Check
+        run: terraform fmt -check -recursive
+
+      - name: Terraform Validate
+        run: terraform validate -no-color
+
+      - name: Terraform Apply
+        id: apply
+        run: terraform apply -auto-approve -input=false
+
+      - name: Create Job Summary
+        if: always()
+        run: |
+          echo "## Terraform Apply Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** ${{ steps.apply.outcome }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Actor:** @${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ steps.apply.outcome }}" == "success" ]; then
+            echo "Infrastructure successfully updated!" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "_I love it when a plan comes together._ 🚬" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "Apply failed. Check logs for details." >> $GITHUB_STEP_SUMMARY
+          fi
