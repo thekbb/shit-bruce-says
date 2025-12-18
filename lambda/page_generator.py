@@ -274,21 +274,10 @@ def generate_seo_page() -> None:
     featured_quote = quotes[0] if quotes else None
     current_date = datetime.now().strftime('%Y-%m-%d')
 
-    structured_data = {
-        "@context": "https://schema.org",
-        "@type": "WebSite",
-        "name": "Shit Bruce Says",
-        "url": f"https://{DOMAIN}/",
-        "description": "A collection of memorable quotes and sayings from Bruce",
-        "mainEntity": {
-            "@type": "ItemList",
-            "numberOfItems": len(quotes),
-            "itemListElement": []
-        }
-    }
+    item_list: List[Dict[str, Any]] = []
 
     for i, quote in enumerate(quotes[:50]):
-        structured_data["mainEntity"]["itemListElement"].append({
+        item_list.append({
             "@type": "ListItem",
             "position": i + 1,
             "item": {
@@ -302,6 +291,19 @@ def generate_seo_page() -> None:
                 "url": f"https://{DOMAIN}/#{quote['SK']}"
             }
         })
+
+    structured_data = {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "Shit Bruce Says",
+        "url": f"https://{DOMAIN}/",
+        "description": "A collection of memorable quotes and sayings from Bruce",
+        "mainEntity": {
+            "@type": "ItemList",
+            "numberOfItems": len(quotes),
+            "itemListElement": item_list
+        }
+    }
 
     quotes_html = ""
     for quote in quotes:

@@ -13,6 +13,7 @@ dev = [
   "moto[dynamodb]",
   "pytest",
   "pytest-cov",
+  "mypy",
 ]
 
 [build-system]
@@ -24,3 +25,20 @@ index-url = "https://pypi.org/simple"
 
 [tool.setuptools]
 py-modules = ["app"]
+
+[tool.mypy]
+python_version = "3.14"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false  # Set to true for strict mode
+check_untyped_defs = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+strict_equality = true
+
+# Ignore missing imports for third-party libraries without stubs
+[[tool.mypy.overrides]]
+module = "moto.*"
+ignore_missing_imports = true
