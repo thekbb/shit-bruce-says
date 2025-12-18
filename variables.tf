@@ -21,6 +21,12 @@ variable "domain_name" {
   default     = "shitbrucesays.co.uk"
 }
 
+variable "github_repo" {
+  description = "GitHub repository in format 'owner/repo' for OIDC trust"
+  type        = string
+  default     = "thekbb/shitbrucesays"
+}
+
 variable "table_name" {
   description = "Name of the DynamoDB table"
   type        = string
