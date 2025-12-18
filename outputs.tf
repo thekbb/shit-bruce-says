@@ -22,3 +22,13 @@ output "site_url" {
   description = "Custom domain URL for the website"
   value       = "https://${var.domain_name}"
 }
+
+output "github_terraform_plan_role_arn" {
+  description = "ARN for GitHub Actions Terraform Plan role (read-only)"
+  value       = aws_iam_role.github_terraform_plan.arn
+}
+
+output "github_terraform_apply_role_arn" {
+  description = "ARN for GitHub Actions Terraform Apply role (read-write)"
+  value       = aws_iam_role.github_terraform_apply.arn
+}
