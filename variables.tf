@@ -24,7 +24,7 @@ variable "domain_name" {
 variable "github_repo" {
   description = "GitHub repository in format 'owner/repo' for OIDC trust"
   type        = string
-  default     = "thekbb/shitbrucesays"
+  default     = "thekbb/shit-bruce-says"
 }
 
 variable "table_name" {
