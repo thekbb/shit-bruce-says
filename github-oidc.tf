@@ -33,8 +33,7 @@ resource "aws_iam_role" "github_terraform_plan" {
           "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
         }
         StringLike = {
-          # Only allow from your repo and pull_request events
-          "token.actions.githubusercontent.com:sub" = "repo:${var.github_repo}:pull_request"
+          "token.actions.githubusercontent.com:sub" = "repo:${var.github_repo}:*"
         }
       }
     }]
