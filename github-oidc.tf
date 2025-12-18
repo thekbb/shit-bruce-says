@@ -40,7 +40,7 @@ resource "aws_iam_role" "github_terraform_plan" {
   }
 }
 
-# Terraform Plan Policy (Read-Only)
+# Terraform Plan Policy (Read-Only + State Lock)
 resource "aws_iam_role_policy" "github_terraform_plan" {
   name = "terraform-plan-permissions"
   role = aws_iam_role.github_terraform_plan.id
@@ -70,6 +70,14 @@ resource "aws_iam_role_policy" "github_terraform_plan" {
           "s3:List*",
         ]
         Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:PutObject",
+          "s3:DeleteObject",
+        ]
+        Resource = "arn:aws:s3:::tfstate-628639830692-us-east-2/*.tflock"
       }
     ]
   })
