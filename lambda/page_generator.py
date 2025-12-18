@@ -11,7 +11,22 @@ BUCKET_NAME = os.environ['BUCKET_NAME']
 DOMAIN = os.environ['DOMAIN']
 TABLE_NAME = os.environ['TABLE_NAME']
 
-def handler(event, context):
+def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
+    """
+    Lambda function entry point triggered by DynamoDB Streams.
+
+    Processes INSERT/MODIFY events for quotes and generates:
+    - Individual quote page (quote/{id}.html)
+    - SEO landing page (seo.html)
+    - Sitemap (sitemap.xml)
+
+    Args:
+        event: DynamoDB Stream event containing Records array
+        context: Lambda context object with runtime information
+
+    Returns:
+        dict: Response with statusCode 200 and success message
+    """
     print(f"Received event: {json.dumps(event, default=str)}")
 
     records = event.get('Records', [])
@@ -33,6 +48,18 @@ def handler(event, context):
     return {'statusCode': 200, 'body': json.dumps('Pages generated successfully')}
 
 def dynamodb_to_dict(dynamodb_item: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Convert DynamoDB Stream item format to plain dictionary.
+
+    Extracts values from DynamoDB's typed format (e.g., {'S': 'value'})
+    into a simple Python dict with native types.
+
+    Args:
+        dynamodb_item: DynamoDB item in Stream format with typed attributes
+
+    Returns:
+        dict: Plain dictionary with string/number/binary values
+    """
     result = {}
     for key, value in dynamodb_item.items():
         if 'S' in value:
@@ -44,6 +71,17 @@ def dynamodb_to_dict(dynamodb_item: Dict[str, Any]) -> Dict[str, Any]:
     return result
 
 def escape_html(text: str) -> str:
+    """
+    Escape HTML special characters to prevent XSS.
+
+    Replaces &, <, >, ", and ' with their HTML entity equivalents.
+
+    Args:
+        text: Raw text that may contain HTML special characters
+
+    Returns:
+        str: HTML-safe text with escaped characters
+    """
     return (text.replace("&", "&amp;")
                .replace("<", "&lt;")
                .replace(">", "&gt;")
@@ -51,13 +89,38 @@ def escape_html(text: str) -> str:
                .replace("'", "&#039;"))
 
 def format_date(iso_string: str) -> str:
+    """
+    Format ISO 8601 datetime string to human-readable format.
+
+    Converts timestamps like "2024-01-15T10:30:00Z" to
+    "January 15, 2024 at 10:30:00".
+
+    Args:
+        iso_string: ISO 8601 formatted datetime string
+
+    Returns:
+        str: Human-readable date string, or original if parsing fails
+    """
     try:
         dt = datetime.fromisoformat(iso_string.replace('Z', '+00:00'))
         return dt.strftime('%B %d, %Y at %H:%M:%S')
     except (ValueError, AttributeError):
         return iso_string
 
-def generate_quote_page(dynamodb_item: Dict[str, Any]):
+def generate_quote_page(dynamodb_item: Dict[str, Any]) -> None:
+    """
+    Generate individual HTML page for a single quote.
+
+    Creates a static HTML page optimized for social media sharing with
+    Open Graph and Twitter Card meta tags. The page automatically redirects
+    non-bot traffic to the main site but serves full HTML to crawlers.
+
+    Args:
+        dynamodb_item: DynamoDB Stream item containing quote data
+
+    Side Effects:
+        Uploads quote/{quote_id}.html to S3 bucket
+    """
     quote = dynamodb_to_dict(dynamodb_item)
     quote_text = quote['quote']
     quote_id = quote['SK']
@@ -153,6 +216,19 @@ def generate_quote_page(dynamodb_item: Dict[str, Any]):
     print(f"Generated quote page: quote/{quote_id}.html")
 
 def fetch_all_quotes() -> List[Dict[str, Any]]:
+    """
+    Fetch all quotes from DynamoDB in reverse chronological order.
+
+    Handles pagination automatically by following LastEvaluatedKey tokens
+    until all quotes are retrieved. Loads all quotes into memory.
+
+    Returns:
+        list: All quote dictionaries sorted newest-first, each containing:
+            - PK: Partition key (always "QUOTE")
+            - SK: Sort key (ULID timestamp identifier)
+            - quote: Quote text
+            - createdAt: ISO 8601 timestamp
+    """
     table = dynamodb.Table(TABLE_NAME)
     quotes = []
 
@@ -175,7 +251,20 @@ def fetch_all_quotes() -> List[Dict[str, Any]]:
 
     return quotes
 
-def generate_seo_page():
+def generate_seo_page() -> None:
+    """
+    Generate SEO landing page and sitemap for all quotes.
+
+    Creates two files:
+    - seo.html: Static landing page with all quotes for SEO/indexing
+    - sitemap.xml: XML sitemap with all quote URLs for search engines
+
+    Includes structured data (JSON-LD), Open Graph tags, and properly
+    formatted HTML for maximum SEO value.
+
+    Side Effects:
+        Uploads seo.html and sitemap.xml to S3 bucket
+    """
     quotes = fetch_all_quotes()
 
     if not quotes:
