@@ -79,7 +79,6 @@ resource "aws_iam_policy" "page_generator_access" {
         Effect = "Allow"
         Action = [
           "s3:PutObject",
-          "s3:PutObjectAcl",
         ]
         Resource = "${aws_s3_bucket.site.arn}/*"
       }
