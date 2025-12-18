@@ -1,14 +1,10 @@
 # GitHub OIDC Provider for AWS authentication
 # Allows GitHub Actions to assume AWS IAM roles without long-lived credentials
 
-data "tls_certificate" "github" {
-  url = "https://token.actions.githubusercontent.com"
-}
-
 resource "aws_iam_openid_connect_provider" "github" {
   url             = "https://token.actions.githubusercontent.com"
   client_id_list  = ["sts.amazonaws.com"]
-  thumbprint_list = [data.tls_certificate.github.certificates[0].sha1_fingerprint]
+  thumbprint_list = ["1c58a3a8518e8759bf075b76b750d4f2df264fcd"]
 
   tags = {
     Name = "github-actions-oidc"
@@ -33,8 +29,7 @@ resource "aws_iam_role" "github_terraform_plan" {
           "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
         }
         StringLike = {
-          # Only allow from your repo and pull_request events
-          "token.actions.githubusercontent.com:sub" = "repo:${var.github_repo}:pull_request"
+          "token.actions.githubusercontent.com:sub" = "repo:${var.github_repo}:*"
         }
       }
     }]
@@ -45,7 +40,7 @@ resource "aws_iam_role" "github_terraform_plan" {
   }
 }
 
-# Terraform Plan Policy (Read-Only)
+# Terraform Plan Policy (Read-Only + State Lock)
 resource "aws_iam_role_policy" "github_terraform_plan" {
   name = "terraform-plan-permissions"
   role = aws_iam_role.github_terraform_plan.id
@@ -75,6 +70,14 @@ resource "aws_iam_role_policy" "github_terraform_plan" {
           "s3:List*",
         ]
         Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:PutObject",
+          "s3:DeleteObject",
+        ]
+        Resource = "arn:aws:s3:::tfstate-628639830692-us-east-2/*.tflock"
       }
     ]
   })

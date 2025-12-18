@@ -39,6 +39,7 @@ jobs:
       - name: Terraform Init
         id: init
         run: terraform init
+        timeout-minutes: 10
 
       - name: Terraform Plan
         id: plan
