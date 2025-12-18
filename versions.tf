@@ -24,7 +24,9 @@ terraform {
     }
   }
   backend "s3" {
+    bucket       = "tfstate-628639830692-us-east-2"
     key          = "shitbrucesays/terraform.tfstate"
+    region       = "us-east-2"
     encrypt      = true
     use_lockfile = true
   }

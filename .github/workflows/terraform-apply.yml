@@ -37,6 +37,7 @@ jobs:
 
       - name: Terraform Init
         run: terraform init
+        timeout-minutes: 10
 
       - name: Terraform Format Check
         run: terraform fmt -check -recursive
