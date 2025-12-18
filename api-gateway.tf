@@ -15,6 +15,24 @@ resource "aws_apigatewayv2_stage" "default" {
   api_id      = aws_apigatewayv2_api.http_api.id
   name        = "$default"
   auto_deploy = true
+
+  route_settings {
+    route_key              = "GET /quotes"
+    throttling_burst_limit = 50 # Allow bursts for pagination/scrolling
+    throttling_rate_limit  = 20 # 20 req/sec for viewing quotes
+  }
+
+  route_settings {
+    route_key              = "POST /quotes"
+    throttling_burst_limit = 5 # Low burst for submissions
+    throttling_rate_limit  = 2 # 2 req/sec max for submitting quotes
+  }
+
+  route_settings {
+    route_key              = "OPTIONS /quotes"
+    throttling_burst_limit = 50 # CORS preflight requests
+    throttling_rate_limit  = 20 # Allow browsers to make preflight checks
+  }
 }
 
 resource "aws_apigatewayv2_integration" "lambda_integration" {
