@@ -55,6 +55,7 @@ resource "aws_iam_role_policy" "github_terraform_plan" {
           "acm:List*",
           "apigateway:Get*",
           "apigateway:List*",
+          "cloudfront:Describe*",
           "cloudfront:Get*",
           "cloudfront:List*",
           "dynamodb:Describe*",

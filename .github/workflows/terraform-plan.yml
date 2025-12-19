@@ -4,9 +4,9 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - '*.tf'
+      - '**/*.tf'
       - 'lambda/**'
-      - '.github/workflows/terraform-plan.yml'
+      - '.github/workflows/**'
 
 env:
   AWS_REGION: us-east-2
@@ -65,37 +65,67 @@ jobs:
               if (!addMatch && !changeMatch && !destroyMatch) return '';
 
               const parts = [];
-              if (addMatch) parts.push(`🟢 create \`${addMatch[1]}\``);
-              if (changeMatch) parts.push(`🟡 update \`${changeMatch[1]}\``);
-              if (destroyMatch) parts.push(`🟠 destroy \`${destroyMatch[1]}\``);
+              if (addMatch) parts.push(`🟢 create <code>${addMatch[1]}</code>`);
+              if (changeMatch) parts.push(`🟡 update <code>${changeMatch[1]}</code>`);
+              if (destroyMatch) parts.push(`🟠 destroy <code>${destroyMatch[1]}</code>`);
 
               return parts.join(' · ');
             };
 
             const summary = formatSummary(plan);
 
-            const output = `${marker}
-### Terraform Plan
+            const splitPlan = (plan) => {
+              const splitPoint = 'Terraform used the selected providers';
+              const idx = plan.indexOf(splitPoint);
+              if (idx === -1) return { refresh: '', changes: plan };
+              return {
+                refresh: plan.slice(0, idx).trim(),
+                changes: plan.slice(idx).trim()
+              };
+            };
 
-<details><summary>${summary || 'Show Plan'}</summary>
+            const { refresh, changes } = splitPlan(plan);
 
-\`\`\`terraform
-${plan}
-\`\`\`
+            const planContent = refresh
+              ? [
+                  '<details><summary>State refresh</summary>',
+                  '',
+                  '```',
+                  refresh,
+                  '```',
+                  '</details>',
+                  '',
+                  '```terraform',
+                  changes,
+                  '```'
+                ]
+              : ['```terraform', plan, '```'];
 
-</details>
-
-*Pusher: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
+            const output = [
+              marker,
+              '### Terraform Plan',
+              '',
+              `<details><summary>${summary || 'Show Plan'}</summary>`,
+              '',
+              ...planContent,
+              '',
+              '</details>',
+              '',
+              `*Pusher: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`
+            ].join('\n');
 
             if (output.length > 65000) {
-              const truncated = `${marker}
-### Terraform Plan
-
-⚠️ Plan output is too large for GitHub comment (${output.length} chars).
-
-View the full plan in the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}).
-
-${summary ? `${summary}\n\n` : ''}*Pusher: @${{ github.actor }}*`;
+              const truncated = [
+                marker,
+                '### Terraform Plan',
+                '',
+                `⚠️ Plan output is too large for GitHub comment (${output.length} chars).`,
+                '',
+                `View the full plan in the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}).`,
+                '',
+                summary || '',
+                `*Pusher: @${{ github.actor }}*`
+              ].join('\n');
 
               // Find existing comment
               const { data: comments } = await github.rest.issues.listComments({
