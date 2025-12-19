@@ -10,6 +10,31 @@ data "aws_cloudfront_response_headers_policy" "security" {
   name = "Managed-SecurityHeadersPolicy"
 }
 
+resource "aws_cloudfront_function" "www_redirect" {
+  name    = "${local.name}-www-redirect"
+  runtime = "cloudfront-js-2.0"
+  comment = "Redirect www subdomain to apex domain"
+  publish = true
+  code    = <<-EOT
+    function handler(event) {
+      var request = event.request;
+      var host = request.headers.host.value;
+
+      if (host.startsWith('www.')) {
+        return {
+          statusCode: 301,
+          statusDescription: 'Moved Permanently',
+          headers: {
+            location: { value: 'https://' + host.substring(4) + request.uri }
+          }
+        };
+      }
+
+      return request;
+    }
+  EOT
+}
+
 resource "aws_cloudfront_origin_access_control" "site" {
   name                              = "${local.name}-oac"
   origin_access_control_origin_type = "s3"
@@ -43,10 +68,16 @@ resource "aws_cloudfront_distribution" "site" {
     cache_policy_id            = data.aws_cloudfront_cache_policy.caching_optimized.id
     origin_request_policy_id   = data.aws_cloudfront_origin_request_policy.cors_s3_origin.id
     response_headers_policy_id = data.aws_cloudfront_response_headers_policy.security.id
+
+    function_association {
+      event_type   = "viewer-request"
+      function_arn = aws_cloudfront_function.www_redirect.arn
+    }
   }
 
   aliases = [
     var.domain_name,
+    "www.${var.domain_name}",
   ]
 
   price_class = "PriceClass_100"
