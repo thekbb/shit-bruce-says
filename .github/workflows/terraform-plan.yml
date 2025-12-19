@@ -58,12 +58,14 @@ jobs:
             const marker = '<!-- terraform-plan-comment -->';
             const plan = process.env.PLAN;
 
+            // Extract the summary line (e.g., "Plan: 0 to add, 1 to change, 0 to destroy.")
+            // Also captures: import, move, replace
+            const summaryMatch = plan.match(/Plan: [\d\w\s,]+\./);
+            const summary = summaryMatch ? summaryMatch[0] : '';
+
             // Build comment body
             const output = `${marker}
             ### Terraform Plan
-
-            #### Initialization  \`${{ steps.init.outcome }}\`
-            #### Plan  \`${{ steps.plan.outcome }}\`
 
             <details><summary>Show Plan</summary>
 
@@ -73,7 +75,7 @@ jobs:
 
             </details>
 
-            *Pusher: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
+            ${summary ? `**${summary}**\n\n` : ''}*Pusher: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
 
             // Check if comment body exceeds GitHub's limit
             if (output.length > 65000) {
@@ -84,11 +86,7 @@ jobs:
 
               View the full plan in the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}).
 
-              #### Summary
-              - Init: \`${{ steps.init.outcome }}\`
-              - Plan: \`${{ steps.plan.outcome }}\`
-
-              *Pusher: @${{ github.actor }}*`;
+              ${summary ? `**${summary}**\n\n` : ''}*Pusher: @${{ github.actor }}*`;
 
               // Find existing comment
               const { data: comments } = await github.rest.issues.listComments({
