@@ -4,9 +4,9 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - '*.tf'
+      - '**/*.tf'
       - 'lambda/**'
-      - '.github/workflows/terraform-plan.yml'
+      - '.github/workflows/**'
 
 env:
   AWS_REGION: us-east-2
