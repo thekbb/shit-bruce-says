@@ -65,14 +65,41 @@ jobs:
               if (!addMatch && !changeMatch && !destroyMatch) return '';
 
               const parts = [];
-              if (addMatch) parts.push(`🟢 create \`${addMatch[1]}\``);
-              if (changeMatch) parts.push(`🟡 update \`${changeMatch[1]}\``);
-              if (destroyMatch) parts.push(`🟠 destroy \`${destroyMatch[1]}\``);
+              if (addMatch) parts.push(`🟢 create <code>${addMatch[1]}</code>`);
+              if (changeMatch) parts.push(`🟡 update <code>${changeMatch[1]}</code>`);
+              if (destroyMatch) parts.push(`🟠 destroy <code>${destroyMatch[1]}</code>`);
 
               return parts.join(' · ');
             };
 
             const summary = formatSummary(plan);
+
+            const splitPlan = (plan) => {
+              const splitPoint = 'Terraform used the selected providers';
+              const idx = plan.indexOf(splitPoint);
+              if (idx === -1) return { refresh: '', changes: plan };
+              return {
+                refresh: plan.slice(0, idx).trim(),
+                changes: plan.slice(idx).trim()
+              };
+            };
+
+            const { refresh, changes } = splitPlan(plan);
+
+            const planContent = refresh
+              ? [
+                  '<details><summary>State refresh</summary>',
+                  '',
+                  '```',
+                  refresh,
+                  '```',
+                  '</details>',
+                  '',
+                  '```terraform',
+                  changes,
+                  '```'
+                ]
+              : ['```terraform', plan, '```'];
 
             const output = [
               marker,
@@ -80,9 +107,7 @@ jobs:
               '',
               `<details><summary>${summary || 'Show Plan'}</summary>`,
               '',
-              '```terraform',
-              plan,
-              '```',
+              ...planContent,
               '',
               '</details>',
               '',
