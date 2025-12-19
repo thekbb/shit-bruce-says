@@ -1,3 +1,23 @@
+locals {
+  api_routes = {
+    get = {
+      method         = "GET"
+      throttle_burst = 50 # Allow bursts for pagination/scrolling
+      throttle_rate  = 20 # 20 req/sec for viewing quotes
+    }
+    post = {
+      method         = "POST"
+      throttle_burst = 5 # Low burst for submissions
+      throttle_rate  = 2 # 2 req/sec max for submitting quotes
+    }
+    options = {
+      method         = "OPTIONS"
+      throttle_burst = 50 # CORS preflight requests
+      throttle_rate  = 20 # Allow browsers to make preflight checks
+    }
+  }
+}
+
 resource "aws_apigatewayv2_api" "http_api" {
   name          = "${local.name}-api"
   protocol_type = "HTTP"
@@ -16,22 +36,13 @@ resource "aws_apigatewayv2_stage" "default" {
   name        = "$default"
   auto_deploy = true
 
-  route_settings {
-    route_key              = "GET /quotes"
-    throttling_burst_limit = 50 # Allow bursts for pagination/scrolling
-    throttling_rate_limit  = 20 # 20 req/sec for viewing quotes
-  }
-
-  route_settings {
-    route_key              = "POST /quotes"
-    throttling_burst_limit = 5 # Low burst for submissions
-    throttling_rate_limit  = 2 # 2 req/sec max for submitting quotes
-  }
-
-  route_settings {
-    route_key              = "OPTIONS /quotes"
-    throttling_burst_limit = 50 # CORS preflight requests
-    throttling_rate_limit  = 20 # Allow browsers to make preflight checks
+  dynamic "route_settings" {
+    for_each = local.api_routes
+    content {
+      route_key              = "${route_settings.value.method} /quotes"
+      throttling_burst_limit = route_settings.value.throttle_burst
+      throttling_rate_limit  = route_settings.value.throttle_rate
+    }
   }
 }
 
@@ -43,21 +54,10 @@ resource "aws_apigatewayv2_integration" "lambda_integration" {
 }
 
 # Routes
-resource "aws_apigatewayv2_route" "get_quotes" {
+resource "aws_apigatewayv2_route" "quotes" {
+  for_each  = local.api_routes
   api_id    = aws_apigatewayv2_api.http_api.id
-  route_key = "GET /quotes"
-  target    = "integrations/${aws_apigatewayv2_integration.lambda_integration.id}"
-}
-
-resource "aws_apigatewayv2_route" "post_quotes" {
-  api_id    = aws_apigatewayv2_api.http_api.id
-  route_key = "POST /quotes"
-  target    = "integrations/${aws_apigatewayv2_integration.lambda_integration.id}"
-}
-
-resource "aws_apigatewayv2_route" "options_quotes" {
-  api_id    = aws_apigatewayv2_api.http_api.id
-  route_key = "OPTIONS /quotes"
+  route_key = "${each.value.method} /quotes"
   target    = "integrations/${aws_apigatewayv2_integration.lambda_integration.id}"
 }
 
