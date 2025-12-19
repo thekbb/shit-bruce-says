@@ -74,28 +74,33 @@ jobs:
 
             const summary = formatSummary(plan);
 
-            const output = `${marker}
-### Terraform Plan
-
-<details><summary>${summary || 'Show Plan'}</summary>
-
-\`\`\`terraform
-${plan}
-\`\`\`
-
-</details>
-
-*Pusher: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
+            const output = [
+              marker,
+              '### Terraform Plan',
+              '',
+              `<details><summary>${summary || 'Show Plan'}</summary>`,
+              '',
+              '```terraform',
+              plan,
+              '```',
+              '',
+              '</details>',
+              '',
+              `*Pusher: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`
+            ].join('\n');
 
             if (output.length > 65000) {
-              const truncated = `${marker}
-### Terraform Plan
-
-⚠️ Plan output is too large for GitHub comment (${output.length} chars).
-
-View the full plan in the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}).
-
-${summary ? `${summary}\n\n` : ''}*Pusher: @${{ github.actor }}*`;
+              const truncated = [
+                marker,
+                '### Terraform Plan',
+                '',
+                `⚠️ Plan output is too large for GitHub comment (${output.length} chars).`,
+                '',
+                `View the full plan in the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}).`,
+                '',
+                summary || '',
+                `*Pusher: @${{ github.actor }}*`
+              ].join('\n');
 
               // Find existing comment
               const { data: comments } = await github.rest.issues.listComments({
