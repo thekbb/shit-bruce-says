@@ -54,39 +54,48 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            // HTML comment marker - invisible but explicit
             const marker = '<!-- terraform-plan-comment -->';
             const plan = process.env.PLAN;
 
-            // Extract the summary line (e.g., "Plan: 0 to add, 1 to change, 0 to destroy.")
-            // Also captures: import, move, replace
-            const summaryMatch = plan.match(/Plan: [\d\w\s,]+\./);
-            const summary = summaryMatch ? summaryMatch[0] : '';
+            const formatSummary = (plan) => {
+              const addMatch = plan.match(/(\d+) to add/);
+              const changeMatch = plan.match(/(\d+) to change/);
+              const destroyMatch = plan.match(/(\d+) to destroy/);
 
-            // Build comment body
+              if (!addMatch && !changeMatch && !destroyMatch) return '';
+
+              const parts = [];
+              if (addMatch) parts.push(`🟢 create \`${addMatch[1]}\``);
+              if (changeMatch) parts.push(`🟡 update \`${changeMatch[1]}\``);
+              if (destroyMatch) parts.push(`🟠 destroy \`${destroyMatch[1]}\``);
+
+              return parts.join(' · ');
+            };
+
+            const summary = formatSummary(plan);
+
             const output = `${marker}
-            ### Terraform Plan
+### Terraform Plan
 
-            <details><summary>Show Plan</summary>
+<details><summary>${summary || 'Show Plan'}</summary>
 
-            \`\`\`terraform
-            ${plan}
-            \`\`\`
+\`\`\`terraform
+${plan}
+\`\`\`
 
-            </details>
+</details>
 
-            ${summary ? `**${summary}**\n\n` : ''}*Pusher: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
+*Pusher: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
 
-            // Check if comment body exceeds GitHub's limit
             if (output.length > 65000) {
               const truncated = `${marker}
-              ### Terraform Plan
+### Terraform Plan
 
-              ⚠️  Plan output is too large for GitHub comment (${output.length} chars).
+⚠️ Plan output is too large for GitHub comment (${output.length} chars).
 
-              View the full plan in the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}).
+View the full plan in the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}).
 
-              ${summary ? `**${summary}**\n\n` : ''}*Pusher: @${{ github.actor }}*`;
+${summary ? `${summary}\n\n` : ''}*Pusher: @${{ github.actor }}*`;
 
               // Find existing comment
               const { data: comments } = await github.rest.issues.listComments({
