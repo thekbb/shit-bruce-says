@@ -1,5 +1,5 @@
 terraform {
-  required_version = ">= 1.13.1"
+  required_version = "~> 1.13.1"
 
   required_providers {
     archive = {
@@ -8,7 +8,7 @@ terraform {
     }
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 6.27"
+      version = "~> 6.27.0"
     }
     null = {
       source  = "hashicorp/null"
@@ -20,7 +20,7 @@ terraform {
     }
     tls = {
       source  = "hashicorp/tls"
-      version = "~> 4.0"
+      version = "~> 4.0.0"
     }
   }
   backend "s3" {
