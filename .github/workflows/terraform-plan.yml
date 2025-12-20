@@ -32,6 +32,6 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Terraform Plan
-        uses: thekbb/terraform-plan-action@v1
+        uses: thekbb/terraform-plan-commenter-action@v1
         with:
           terraform-version: '1.14.3'
