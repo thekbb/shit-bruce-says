@@ -63,7 +63,7 @@ resource "aws_cloudfront_distribution" "site" {
       "GET",
       "HEAD",
     ]
-    compress = true
+    compress = false
 
     cache_policy_id            = data.aws_cloudfront_cache_policy.caching_optimized.id
     origin_request_policy_id   = data.aws_cloudfront_origin_request_policy.cors_s3_origin.id
