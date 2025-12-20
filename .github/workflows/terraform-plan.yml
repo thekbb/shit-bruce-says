@@ -32,7 +32,6 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Terraform Plan
-        uses: thekbb/terraform-plan-action@main
+        uses: thekbb/terraform-plan-action@v1
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
           terraform-version: '1.14.3'
