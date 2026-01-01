@@ -157,7 +157,7 @@ def generate_quote_page(dynamodb_item: Dict[str, Any]) -> None:
     <meta property="twitter:description" content='Said on {format_date(created_at)} | Shit Bruce Says'>
     <meta property="twitter:image" content="https://{DOMAIN}/favicon.svg">
 
-    <link rel="canonical" href="https://{DOMAIN}/#{quote_id}">
+    <link rel="canonical" href="https://{DOMAIN}/quote/{quote_id}.html">
 
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <link rel="stylesheet" href="../styles.css">
