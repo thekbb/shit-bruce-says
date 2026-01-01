@@ -36,8 +36,6 @@ resource "aws_lambda_function" "api" {
   filename         = data.archive_file.lambda_zip.output_path
   source_code_hash = data.archive_file.lambda_zip.output_base64sha256
 
-  reserved_concurrent_executions = 50
-
   environment {
     variables = {
       TABLE_NAME   = aws_dynamodb_table.quotes.name
@@ -65,8 +63,6 @@ resource "aws_lambda_function" "page_generator" {
 
   filename         = data.archive_file.page_generator_zip.output_path
   source_code_hash = data.archive_file.page_generator_zip.output_base64sha256
-
-  reserved_concurrent_executions = 10
 
   environment {
     variables = {
