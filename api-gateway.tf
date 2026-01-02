@@ -27,7 +27,7 @@ resource "aws_apigatewayv2_api" "http_api" {
     allow_methods  = ["GET", "POST", "OPTIONS"]
     allow_headers  = ["content-type"]
     expose_headers = ["content-type"]
-    max_age        = 3600
+    max_age        = 3602
   }
 }
 
