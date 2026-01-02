@@ -9,9 +9,10 @@ updates:
     commit-message:
       prefix: "ci"
     groups:
-      actions:
-        patterns:
-          - "*"
+      actions-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
 
   # Python dependencies (lambda)
   - package-ecosystem: "pip"
@@ -22,9 +23,10 @@ updates:
     commit-message:
       prefix: "deps"
     groups:
-      python-deps:
-        patterns:
-          - "*"
+      python-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
 
   # Terraform providers
   - package-ecosystem: "terraform"
@@ -35,6 +37,7 @@ updates:
     commit-message:
       prefix: "deps"
     groups:
-      terraform-providers:
-        patterns:
-          - "*"
+      terraform-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
