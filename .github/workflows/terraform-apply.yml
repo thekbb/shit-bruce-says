@@ -11,6 +11,10 @@ on:
 env:
   AWS_REGION: us-east-2
 
+concurrency:
+  group: terraform
+  cancel-in-progress: false
+
 jobs:
   apply:
     name: Terraform Apply
