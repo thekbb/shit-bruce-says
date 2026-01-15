@@ -68,6 +68,7 @@ resource "aws_iam_policy" "page_generator_access" {
           "dynamodb:GetRecords",
           "dynamodb:GetShardIterator",
           "dynamodb:ListStreams",
+          "dynamodb:Put*",
           "dynamodb:Query",
         ]
         Resource = [
