@@ -63,7 +63,7 @@ resource "aws_iam_policy" "page_generator_access" {
       {
         Effect = "Allow"
         Action = [
-          "dynamodb:DescribeStream",
+          "dynamodb:Describe*",
           "dynamodb:GetItem",
           "dynamodb:GetRecords",
           "dynamodb:GetShardIterator",
