@@ -45,7 +45,6 @@ jobs:
 
       - name: Package Lambda Zips
         run: |
-          chmod +x tools/package-lambda.sh
           tools/package-lambda.sh
 
       - name: Upload Artifacts If Changed
