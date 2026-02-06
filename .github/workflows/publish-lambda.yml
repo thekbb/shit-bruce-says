@@ -12,7 +12,7 @@ env:
   AWS_REGION: us-east-2
 
 concurrency:
-  group: publish-lambda
+  group: the-one-group-to-rule-them-all
   cancel-in-progress: false
 
 jobs:
