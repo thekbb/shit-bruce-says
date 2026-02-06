@@ -32,3 +32,15 @@ variable "table_name" {
   type        = string
   default     = "bruce-quotes"
 }
+
+variable "lambda_api_s3_key" {
+  description = "S3 key for the API Lambda deployment package"
+  type        = string
+  default     = "lambda/api.zip"
+}
+
+variable "lambda_page_generator_s3_key" {
+  description = "S3 key for the page generator Lambda deployment package"
+  type        = string
+  default     = "lambda/page-generator.zip"
+}
