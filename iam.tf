@@ -20,7 +20,7 @@ resource "aws_iam_policy" "ddb_access" {
     Statement = [{
       Effect = "Allow"
       Action = [
-        "dynamodb:PutItem",
+        "dynamodb:Put*",
         "dynamodb:Query",
       ]
       Resource = aws_dynamodb_table.quotes.arn
@@ -63,7 +63,7 @@ resource "aws_iam_policy" "page_generator_access" {
       {
         Effect = "Allow"
         Action = [
-          "dynamodb:DescribeStream",
+          "dynamodb:Describe*",
           "dynamodb:GetItem",
           "dynamodb:GetRecords",
           "dynamodb:GetShardIterator",
