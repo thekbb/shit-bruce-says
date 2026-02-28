@@ -1,0 +1,101 @@
+name: Publish Lambda
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'lambda/**'
+      - 'tools/package-lambda.sh'
+      - '.github/workflows/publish-lambda.yml'
+
+env:
+  AWS_REGION: us-east-2
+
+concurrency:
+  group: the-one-group-to-rule-them-all
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Publish Lambda Artifacts
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: arn:aws:iam::628639830692:role/bruce-quotes-github-terraform-apply
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: latest
+
+      - name: Terraform Init
+        run: terraform init
+        timeout-minutes: 10
+
+      - name: Package Lambda Zips
+        run: |
+          tools/package-lambda.sh
+
+      - name: Upload Artifacts If Changed
+        id: upload
+        run: |
+          set -euo pipefail
+          BUCKET="$(terraform output -raw lambda_artifacts_bucket)"
+
+          sha256_file() {
+            shasum -a 256 "$1" | awk '{print $1}'
+          }
+
+          upload_if_changed() {
+            local key="$1"
+            local file="$2"
+            local new_hash
+            new_hash="$(sha256_file "$file")"
+
+            local current_hash
+            current_hash="$(aws s3api head-object \
+              --bucket "$BUCKET" \
+              --key "$key" \
+              --query 'Metadata.code-sha256' \
+              --output text 2>/dev/null || true)"
+
+            if [ "$current_hash" = "$new_hash" ]; then
+              echo "No change for $key (hash $new_hash). Skipping upload."
+              return 1
+            fi
+
+            echo "Uploading $key (hash $new_hash)"
+            aws s3api put-object \
+              --bucket "$BUCKET" \
+              --key "$key" \
+              --body "$file" \
+              --metadata "code-sha256=$new_hash" \
+              --output text
+          }
+
+          upload_if_changed "lambda/api.zip" "dist/lambda-api.zip" && echo "api_changed=true" >> "$GITHUB_OUTPUT" || echo "api_changed=false" >> "$GITHUB_OUTPUT"
+          upload_if_changed "lambda/page-generator.zip" "dist/lambda-page-generator.zip" && echo "pg_changed=true" >> "$GITHUB_OUTPUT" || echo "pg_changed=false" >> "$GITHUB_OUTPUT"
+
+      - name: Create Job Summary
+        if: always()
+        run: |
+          echo "## Publish Lambda Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Actor:** @${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          echo "Lambda artifacts published. Terraform apply runs in a separate workflow." >> $GITHUB_STEP_SUMMARY
