@@ -23,6 +23,11 @@ output "site_url" {
   value       = "https://${var.domain_name}"
 }
 
+output "lambda_artifacts_bucket" {
+  description = "S3 bucket for Lambda build artifacts"
+  value       = aws_s3_bucket.lambda_artifacts.bucket
+}
+
 output "github_terraform_plan_role_arn" {
   description = "ARN for GitHub Actions Terraform Plan role (read-only)"
   value       = aws_iam_role.github_terraform_plan.arn

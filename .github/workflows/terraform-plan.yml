@@ -30,7 +30,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v5
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: arn:aws:iam::628639830692:role/bruce-quotes-github-terraform-plan
           aws-region: ${{ env.AWS_REGION }}

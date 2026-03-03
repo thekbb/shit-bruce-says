@@ -15,7 +15,7 @@ updates:
           - "patch"
 
   # Python dependencies (lambda)
-  - package-ecosystem: "pip"
+  - package-ecosystem: "uv"
     directory: "/lambda"
     schedule:
       interval: "weekly"
@@ -23,10 +23,9 @@ updates:
     commit-message:
       prefix: "deps"
     groups:
-      python-minor-patch:
-        update-types:
-          - "minor"
-          - "patch"
+      python-all:
+        patterns:
+          - "*"
 
   # Terraform providers
   - package-ecosystem: "terraform"
