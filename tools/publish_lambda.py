@@ -56,7 +56,12 @@ def get_current_hash(s3_client, bucket: str, key: str) -> str | None:
             return None
         raise
 
-    return response.get("Metadata", {}).get("code-sha256")
+    metadata = response.get("Metadata", {})
+    if not isinstance(metadata, dict):
+        return None
+
+    value = metadata.get("code-sha256")
+    return value if isinstance(value, str) else None
 
 
 def create_deterministic_zip(source_path: Path, zip_path: Path) -> None:
