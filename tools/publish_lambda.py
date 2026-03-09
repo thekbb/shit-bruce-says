@@ -10,6 +10,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import traceback
 from dataclasses import dataclass
 from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
@@ -141,47 +142,58 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> int:
-    args = parse_args()
+    try:
+        args = parse_args()
 
-    artifacts = [
-        Artifact(
-            key="lambda/api.zip",
-            source_path=Path(args.api_source),
-            zip_path=Path(args.api_zip),
-            output_name="api_changed",
-        ),
-        Artifact(
-            key="lambda/page-generator.zip",
-            source_path=Path(args.page_generator_source),
-            zip_path=Path(args.page_generator_zip),
-            output_name="pg_changed",
-        ),
-    ]
+        artifacts = [
+            Artifact(
+                key="lambda/api.zip",
+                source_path=Path(args.api_source),
+                zip_path=Path(args.api_zip),
+                output_name="api_changed",
+            ),
+            Artifact(
+                key="lambda/page-generator.zip",
+                source_path=Path(args.page_generator_source),
+                zip_path=Path(args.page_generator_zip),
+                output_name="pg_changed",
+            ),
+        ]
 
-    missing = [str(artifact.source_path) for artifact in artifacts if not artifact.source_path.exists()]
-    if missing:
-        print("Missing source file(s):", file=sys.stderr)
-        for item in missing:
-            print(f"  - {item}", file=sys.stderr)
+        missing = [str(artifact.source_path) for artifact in artifacts if not artifact.source_path.exists()]
+        if missing:
+            print("Missing source file(s):", file=sys.stderr)
+            for item in missing:
+                print(f"  - {item}", file=sys.stderr)
+            return 1
+
+        for artifact in artifacts:
+            create_deterministic_zip(artifact.source_path, artifact.zip_path)
+            print(f"Wrote {artifact.zip_path}")
+
+        bucket = args.bucket or terraform_output_bucket()
+        s3_client = boto3.client("s3")
+
+        output_values: dict[str, bool] = {}
+        for artifact in artifacts:
+            try:
+                output_values[artifact.output_name] = upload_if_changed(
+                    s3_client=s3_client,
+                    bucket=bucket,
+                    artifact=artifact,
+                )
+            except Exception as error:
+                print(
+                    f"Failed processing artifact '{artifact.key}' in bucket '{bucket}': {error}",
+                    file=sys.stderr,
+                )
+                raise
+
+        write_github_output(output_values)
+        return 0
+    except Exception:
+        traceback.print_exc()
         return 1
-
-    for artifact in artifacts:
-        create_deterministic_zip(artifact.source_path, artifact.zip_path)
-        print(f"Wrote {artifact.zip_path}")
-
-    bucket = args.bucket or terraform_output_bucket()
-    s3_client = boto3.client("s3")
-
-    output_values: dict[str, bool] = {}
-    for artifact in artifacts:
-        output_values[artifact.output_name] = upload_if_changed(
-            s3_client=s3_client,
-            bucket=bucket,
-            artifact=artifact,
-        )
-
-    write_github_output(output_values)
-    return 0
 
 
 if __name__ == "__main__":
