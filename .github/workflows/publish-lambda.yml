@@ -39,7 +39,7 @@ jobs:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v6
         with:
-          role-to-assume: arn:aws:iam::628639830692:role/bruce-quotes-github-terraform-apply
+          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/bruce-quotes-github-terraform-apply
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Setup Terraform
