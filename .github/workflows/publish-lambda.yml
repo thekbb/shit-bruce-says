@@ -1,0 +1,70 @@
+name: Publish Lambda
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'lambda/**'
+      - 'tools/publish_lambda.py'
+      - '.github/workflows/publish-lambda.yml'
+
+env:
+  AWS_REGION: us-east-2
+
+concurrency:
+  group: the-one-group-to-rule-them-all
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Publish Lambda Artifacts
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.x'
+
+      - name: Install Python Dependencies
+        run: python -m pip install --upgrade pip boto3
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: arn:aws:iam::628639830692:role/bruce-quotes-github-terraform-apply
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: latest
+
+      - name: Terraform Init
+        run: terraform init
+        timeout-minutes: 10
+
+      - name: Package And Upload Artifacts If Changed
+        id: upload
+        run: |
+          python tools/publish_lambda.py
+
+      - name: Create Job Summary
+        if: always()
+        run: |
+          echo "## Publish Lambda Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Actor:** @${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          echo "Lambda artifacts published. Terraform apply runs in a separate workflow." >> $GITHUB_STEP_SUMMARY

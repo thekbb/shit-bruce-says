@@ -86,7 +86,7 @@ jobs:
       - name: Run mypy
         run: |
           . .venv/bin/activate
-          mypy app.py page_generator.py
+          mypy app.py page_generator.py ../tools/publish_lambda.py
 
   terraform:
     name: Terraform Validate & Lint
