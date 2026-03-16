@@ -1,12 +1,10 @@
 name: Publish Lambda
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'lambda/**'
-      - 'tools/publish_lambda.py'
-      - '.github/workflows/publish-lambda.yml'
+  workflow_run:
+    workflows: ["CI"]
+    types:
+      - completed
 
 env:
   AWS_REGION: us-east-2
@@ -19,6 +17,7 @@ jobs:
   publish:
     name: Publish Lambda Artifacts
     runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'main' }}
 
     permissions:
       contents: read
@@ -27,43 +26,76 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 2
+
+      - name: Detect Lambda Changes
+        id: changes
+        run: |
+          if git rev-parse HEAD^ >/dev/null 2>&1; then
+            changed_files="$(git diff --name-only HEAD^ HEAD)"
+          else
+            changed_files="$(git show --pretty='' --name-only HEAD)"
+          fi
+
+          printf 'Changed files:\n%s\n' "$changed_files"
+
+          if printf '%s\n' "$changed_files" | grep -Eq '^(lambda/|tools/publish_lambda\.py$)'; then
+            echo "should_publish=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "should_publish=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Setup Python
+        if: steps.changes.outputs.should_publish == 'true'
         uses: actions/setup-python@v6
         with:
           python-version: '3.x'
 
       - name: Install Python Dependencies
+        if: steps.changes.outputs.should_publish == 'true'
         run: python -m pip install --upgrade pip boto3
 
       - name: Configure AWS Credentials
+        if: steps.changes.outputs.should_publish == 'true'
         uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/bruce-quotes-github-terraform-apply
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Setup Terraform
+        if: steps.changes.outputs.should_publish == 'true'
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: latest
 
       - name: Terraform Init
+        if: steps.changes.outputs.should_publish == 'true'
         run: terraform init
         timeout-minutes: 10
 
       - name: Package And Upload Artifacts If Changed
         id: upload
+        if: steps.changes.outputs.should_publish == 'true'
         run: |
           python tools/publish_lambda.py
 
+      - name: Skip Publish Summary
+        if: steps.changes.outputs.should_publish != 'true'
+        run: |
+          echo "## Publish Lambda Results" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "No Lambda source changes detected for commit \`${{ github.event.workflow_run.head_sha }}\`. Skipping artifact publish." >> "$GITHUB_STEP_SUMMARY"
+
       - name: Create Job Summary
-        if: always()
+        if: always() && steps.changes.outputs.should_publish == 'true'
         run: |
           echo "## Publish Lambda Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Status:** ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Branch:** \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** \`${{ github.event.workflow_run.head_branch }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ github.event.workflow_run.head_sha }}" >> $GITHUB_STEP_SUMMARY
           echo "**Actor:** @${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
