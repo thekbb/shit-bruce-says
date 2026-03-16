@@ -28,24 +28,31 @@ jobs:
         uses: actions/checkout@v6
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
-          fetch-depth: 2
+          fetch-depth: 1
 
-      - name: Detect Lambda Changes
+      - name: Download Deploy Context
+        uses: dawidd6/action-download-artifact@v9
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          run_id: ${{ github.event.workflow_run.id }}
+          name: deploy-context
+
+      - name: Read Deploy Context
         id: changes
         run: |
-          if git rev-parse HEAD^ >/dev/null 2>&1; then
-            changed_files="$(git diff --name-only HEAD^ HEAD)"
-          else
-            changed_files="$(git show --pretty='' --name-only HEAD)"
-          fi
+          python - <<'PY'
+          import json
+          import os
 
-          printf 'Changed files:\n%s\n' "$changed_files"
+          with open("deploy-context.json", encoding="utf-8") as handle:
+              context = json.load(handle)
 
-          if printf '%s\n' "$changed_files" | grep -Eq '^(lambda/|tools/publish_lambda\.py$)'; then
-            echo "should_publish=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "should_publish=false" >> "$GITHUB_OUTPUT"
-          fi
+          print(json.dumps(context, indent=2))
+
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as handle:
+              handle.write(f"should_publish={'true' if context['should_publish'] else 'false'}\n")
+              handle.write(f"should_apply={'true' if context['should_apply'] else 'false'}\n")
+          PY
 
       - name: Setup Python
         if: steps.changes.outputs.should_publish == 'true'
@@ -80,6 +87,13 @@ jobs:
         if: steps.changes.outputs.should_publish == 'true'
         run: |
           python tools/publish_lambda.py
+
+      - name: Upload Deploy Context
+        uses: actions/upload-artifact@v4
+        with:
+          name: deploy-context
+          path: deploy-context.json
+          retention-days: 1
 
       - name: Skip Publish Summary
         if: steps.changes.outputs.should_publish != 'true'
