@@ -43,9 +43,10 @@ jobs:
           uv pip install -e '.[dev]'
 
       - name: Run tests
+        env:
+          UV_PROJECT_ENVIRONMENT: .venv
         run: |
-          . .venv/bin/activate
-          pytest -v --cov=. --cov-report=term-missing
+          uv run pytest -v --cov=. --cov-report=term-missing
 
   typecheck:
     name: Type Check (mypy)
@@ -82,9 +83,10 @@ jobs:
           uv pip install -e '.[dev]'
 
       - name: Run mypy
+        env:
+          UV_PROJECT_ENVIRONMENT: .venv
         run: |
-          . .venv/bin/activate
-          mypy app.py page_generator.py ../tools/publish_lambda.py
+          uv run mypy app.py page_generator.py ../tools/publish_lambda.py
 
   terraform:
     name: Terraform Validate & Lint
