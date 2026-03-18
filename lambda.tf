@@ -1,28 +1,11 @@
-data "archive_file" "lambda_zip" {
-  type        = "zip"
-  source_dir  = "${path.module}/lambda"
-  output_path = "${path.module}/.dist/lambda.zip"
-
-  excludes = [
-    "*.pyc",
-    "*.sh",
-    ".aws-sam",
-    ".DS_Store",
-    ".pytest_cache",
-    ".venv",
-    "__pycache__",
-    "dev_*",
-    "pyproject.toml",
-    "template.yaml",
-    "tests",
-    "uv.lock",
-  ]
+data "aws_s3_object" "lambda_api" {
+  bucket = aws_s3_bucket.lambda_artifacts.bucket
+  key    = var.lambda_api_s3_key
 }
 
-data "archive_file" "page_generator_zip" {
-  type        = "zip"
-  source_file = "${path.module}/lambda/page_generator.py"
-  output_path = "${path.module}/.dist/page_generator.zip"
+data "aws_s3_object" "lambda_page_generator" {
+  bucket = aws_s3_bucket.lambda_artifacts.bucket
+  key    = var.lambda_page_generator_s3_key
 }
 
 # Lambda function
@@ -33,8 +16,9 @@ resource "aws_lambda_function" "api" {
   runtime       = "python3.14"
   architectures = ["arm64"]
 
-  filename         = data.archive_file.lambda_zip.output_path
-  source_code_hash = data.archive_file.lambda_zip.output_base64sha256
+  s3_bucket         = aws_s3_bucket.lambda_artifacts.bucket
+  s3_key            = var.lambda_api_s3_key
+  s3_object_version = data.aws_s3_object.lambda_api.version_id
 
   environment {
     variables = {
@@ -61,8 +45,9 @@ resource "aws_lambda_function" "page_generator" {
   architectures = ["arm64"]
   timeout       = 60
 
-  filename         = data.archive_file.page_generator_zip.output_path
-  source_code_hash = data.archive_file.page_generator_zip.output_base64sha256
+  s3_bucket         = aws_s3_bucket.lambda_artifacts.bucket
+  s3_key            = var.lambda_page_generator_s3_key
+  s3_object_version = data.aws_s3_object.lambda_page_generator.version_id
 
   environment {
     variables = {

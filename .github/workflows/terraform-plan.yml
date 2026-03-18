@@ -12,7 +12,7 @@ env:
   AWS_REGION: us-east-2
 
 concurrency:
-  group: terraform
+  group: the-one-group-to-rule-them-all
   cancel-in-progress: false
 
 jobs:
@@ -32,7 +32,7 @@ jobs:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v6
         with:
-          role-to-assume: arn:aws:iam::628639830692:role/bruce-quotes-github-terraform-plan
+          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/bruce-quotes-github-terraform-plan
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Terraform Plan

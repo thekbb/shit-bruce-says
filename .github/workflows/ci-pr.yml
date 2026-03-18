@@ -1,94 +1,13 @@
-name: CI
+name: CI PR
 
 on:
-  push:
+  pull_request:
     branches: [main]
 
 permissions:
   contents: read
 
 jobs:
-  deploy-context:
-    name: Compute Deploy Context
-    runs-on: ubuntu-latest
-
-    outputs:
-      should_publish: ${{ steps.context.outputs.should_publish }}
-      should_apply: ${{ steps.context.outputs.should_apply }}
-
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-
-      - name: Compute Deploy Context
-        id: context
-        run: |
-          python - <<'PY'
-          import json
-          import os
-          import re
-          import subprocess
-          from pathlib import Path
-
-          before = os.environ["BEFORE_SHA"]
-          after = os.environ["AFTER_SHA"]
-
-          if re.fullmatch(r"0{40}", before):
-              result = subprocess.run(
-                  ["git", "show", "--pretty=", "--name-only", after],
-                  check=True,
-                  capture_output=True,
-                  text=True,
-              )
-          else:
-              result = subprocess.run(
-                  ["git", "diff", "--name-only", before, after],
-                  check=True,
-                  capture_output=True,
-                  text=True,
-              )
-
-          changed_files = [line for line in result.stdout.splitlines() if line.strip()]
-
-          should_publish = any(
-              path.startswith("lambda/") or path == "tools/publish_lambda.py"
-              for path in changed_files
-          )
-          should_apply = any(
-              path.endswith(".tf")
-              or path.startswith("lambda/")
-              or path == "tools/publish_lambda.py"
-              for path in changed_files
-          )
-
-          context = {
-              "before_sha": before,
-              "after_sha": after,
-              "changed_files": changed_files,
-              "should_publish": should_publish,
-              "should_apply": should_apply,
-          }
-
-          Path("deploy-context.json").write_text(json.dumps(context, indent=2), encoding="utf-8")
-          print(json.dumps(context, indent=2))
-
-          github_output = Path(os.environ["GITHUB_OUTPUT"])
-          with github_output.open("a", encoding="utf-8") as handle:
-              handle.write(f"should_publish={'true' if should_publish else 'false'}\n")
-              handle.write(f"should_apply={'true' if should_apply else 'false'}\n")
-          PY
-        env:
-          BEFORE_SHA: ${{ github.event.before }}
-          AFTER_SHA: ${{ github.sha }}
-
-      - name: Upload Deploy Context
-        uses: actions/upload-artifact@v4
-        with:
-          name: deploy-context
-          path: deploy-context.json
-          retention-days: 1
-
   test:
     name: Unit Tests
     runs-on: ubuntu-latest

@@ -27,6 +27,18 @@ variable "github_repo" {
   default     = "thekbb/shit-bruce-says"
 }
 
+variable "lambda_api_s3_key" {
+  description = "S3 key for the API Lambda deployment package"
+  type        = string
+  default     = "lambda/api.zip"
+}
+
+variable "lambda_page_generator_s3_key" {
+  description = "S3 key for the page generator Lambda deployment package"
+  type        = string
+  default     = "lambda/page-generator.zip"
+}
+
 variable "table_name" {
   description = "Name of the DynamoDB table"
   type        = string
