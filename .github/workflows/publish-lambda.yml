@@ -31,7 +31,7 @@ jobs:
           fetch-depth: 1
 
       - name: Download Deploy Context
-        uses: dawidd6/action-download-artifact@v9
+        uses: dawidd6/action-download-artifact@v19
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           run_id: ${{ github.event.workflow_run.id }}
