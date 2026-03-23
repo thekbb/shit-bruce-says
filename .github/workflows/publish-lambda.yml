@@ -31,7 +31,7 @@ jobs:
           fetch-depth: 1
 
       - name: Download Deploy Context
-        uses: dawidd6/action-download-artifact@v9
+        uses: dawidd6/action-download-artifact@v19
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           run_id: ${{ github.event.workflow_run.id }}
@@ -89,7 +89,7 @@ jobs:
           python tools/publish_lambda.py
 
       - name: Upload Deploy Context
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: deploy-context
           path: deploy-context.json
