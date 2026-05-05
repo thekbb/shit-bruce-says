@@ -6,14 +6,11 @@ from datetime import datetime, timezone
 from typing import Any, Optional
 
 import boto3
-from boto3.dynamodb.conditions import Key
 
 class Config:
     """Application configuration constants."""
     MAX_INPUT_LENGTH = 300
     MIN_INPUT_LENGTH = 5
-    DEFAULT_LIMIT = 10
-    MAX_LIMIT = 200
     REGION = os.getenv("AWS_REGION", "us-east-2")
     TABLE_NAME = os.getenv("TABLE_NAME", "bruce-quotes")
 
@@ -67,8 +64,6 @@ def _route(event: dict[str, Any], ctx: Optional[Any] = None) -> dict[str, Any]:
     if path != "/" and path.endswith("/"):
         path = path[:-1]
 
-    if method == "GET" and path == "/quotes":
-        return _get_quotes(event, ctx)
     if method == "POST" and path == "/quotes":
         return _post_quote(event, ctx)
     if method == "OPTIONS":
@@ -86,6 +81,7 @@ def _route(event: dict[str, Any], ctx: Optional[Any] = None) -> dict[str, Any]:
 
 # lazy table getter so moto can patch boto3 before first use
 _table: Optional[Any] = None
+_lambda_client: Optional[Any] = None
 
 def _get_table() -> Any:
     """
@@ -112,6 +108,13 @@ def _get_table() -> Any:
         )
         _table = dynamodb.Table(Config.TABLE_NAME)
     return _table
+
+
+def _get_lambda_client() -> Any:
+    global _lambda_client
+    if _lambda_client is None:
+        _lambda_client = boto3.client("lambda", region_name=Config.REGION)
+    return _lambda_client
 
 def _resp(code: int, obj: dict[str, Any], headers: Optional[dict[str, str]] = None) -> dict[str, Any]:
     """
@@ -160,57 +163,6 @@ def _ulid() -> str:
 
     return ulid_str
 
-def _get_quotes(event: dict[str, Any], _ctx: Optional[Any]) -> dict[str, Any]:
-    """
-    Retrieve paginated quotes from DynamoDB.
-
-    Queries quotes in reverse chronological order (newest first) with configurable
-    pagination. Supports cursor-based pagination via DynamoDB's LastEvaluatedKey.
-
-    Args:
-        event: API Gateway event with optional queryStringParameters:
-            - limit (int): Number of quotes to return (1-200, default 10)
-            - cursor (str): JSON-encoded LastEvaluatedKey from previous page
-        _ctx: Lambda context (unused, prefixed with _ to indicate this)
-
-    Returns:
-        dict: API Gateway response containing:
-            - items: List of quote objects with quote, createdAt, and SK fields
-            - cursor: Pagination token for next page (or None if last page)
-
-    Example query string:
-        ?limit=20&cursor={"PK":"QUOTE","SK":"01ARZ3NDEK..."}
-    """
-    qs: dict[str, Any] = event.get("queryStringParameters") or {}
-    try:
-        limit = int(qs.get("limit", Config.DEFAULT_LIMIT))
-    except (TypeError, ValueError):
-        limit = Config.DEFAULT_LIMIT
-    limit = max(1, min(limit, Config.MAX_LIMIT))
-
-    eks: Optional[dict[str, Any]] = None
-    if qs.get("cursor"):
-        try:
-            eks = json.loads(qs["cursor"])
-        except Exception:
-            eks = None
-
-    kwargs: dict[str, Any] = {
-        "KeyConditionExpression": Key("PK").eq("QUOTE"),
-        "ScanIndexForward": False,
-        "Limit": limit,
-        "ProjectionExpression": "quote, createdAt, SK",
-    }
-    if eks is not None:
-        kwargs["ExclusiveStartKey"] = eks
-
-    res = _get_table().query(**kwargs)
-    return _resp(
-        200,
-        {"items": res.get("Items", []), "cursor": res.get("LastEvaluatedKey")},
-        headers={"access-control-allow-origin": get_cors_origin()},
-    )
-
 def _normalize_quote(quote_text: str) -> str:
     """
     Remove surrounding quotes from quote text to ensure consistent storage format.
@@ -241,22 +193,37 @@ def _normalize_quote(quote_text: str) -> str:
 
     return text
 
+
+def _invoke_page_generator() -> None:
+    function_name = os.getenv("PAGE_GENERATOR_FUNCTION_NAME", "").strip()
+    if not function_name:
+        return
+
+    payload = json.dumps({"source": "quotes-api"}).encode("utf-8")
+    try:
+        _get_lambda_client().invoke(
+            FunctionName=function_name,
+            InvocationType="Event",
+            Payload=payload,
+        )
+    except Exception as exc:
+        print(f"Failed to invoke page generator: {exc}")
+
 def _post_quote(event: dict[str, Any], _ctx: Optional[Any]) -> dict[str, Any]:
     """
     Create a new quote and store it in DynamoDB.
 
     Validates quote length, checks for SQL-like content, normalizes the quote text,
-    generates a ULID for the sort key, and stores in DynamoDB. Triggers page
-    generation via DynamoDB Stream.
+    generates a ULID for the sort key, and stores in DynamoDB. It then kicks
+    off the static site publisher asynchronously.
 
     Args:
-        event: API Gateway event with JSON body containing:
-            - quote (str): The quote text to store
+        event: API Gateway event with JSON body containing a quote string
         _ctx: Lambda context (unused)
 
     Returns:
         dict: API Gateway response with:
-            - 201 Created on success with createdAt timestamp
+            - 201 Created on success with quote metadata
             - 400 Bad Request on validation errors
             - 400 Bad Request on invalid JSON
 
@@ -282,15 +249,24 @@ def _post_quote(event: dict[str, Any], _ctx: Optional[Any]) -> dict[str, Any]:
     now = datetime.now(timezone.utc).isoformat()
     item = {"PK": "QUOTE", "SK": _ulid(), "quote": quote, "createdAt": now}
     _get_table().put_item(Item=item)
-    return _resp(201, {"createdAt": now}, headers={"access-control-allow-origin": get_cors_origin()})
+    _invoke_page_generator()
+    return _resp(
+        201,
+        {
+            "quoteId": item["SK"],
+            "quote": quote,
+            "createdAt": now,
+            "url": f"/quotes/{item['SK']}/",
+        },
+        headers={"access-control-allow-origin": get_cors_origin()},
+    )
 
 def handler(event: dict[str, Any], ctx: Any) -> dict[str, Any]:
     """
     Lambda function entry point for the quotes API.
 
-    Handles API Gateway requests and routes them to appropriate handlers
-    (GET /quotes, POST /quotes, OPTIONS). This is the main function invoked
-    by AWS Lambda.
+    Handles API Gateway requests and routes them to appropriate handlers.
+    This Lambda only accepts quote submissions and CORS preflight requests.
 
     Args:
         event: API Gateway event payload (HTTP API v2 or REST API format)
@@ -300,7 +276,6 @@ def handler(event: dict[str, Any], ctx: Any) -> dict[str, Any]:
         dict: API Gateway response with statusCode, headers, and body
 
     Supported Routes:
-        - GET /quotes: Retrieve paginated quotes
         - POST /quotes: Create a new quote
         - OPTIONS /quotes: CORS preflight
     """

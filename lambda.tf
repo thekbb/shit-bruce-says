@@ -22,8 +22,9 @@ resource "aws_lambda_function" "api" {
 
   environment {
     variables = {
-      TABLE_NAME   = aws_dynamodb_table.quotes.name
-      ALLOW_ORIGIN = var.allow_origin
+      TABLE_NAME                    = aws_dynamodb_table.quotes.name
+      ALLOW_ORIGIN                  = var.allow_origin
+      PAGE_GENERATOR_FUNCTION_NAME  = aws_lambda_function.page_generator.function_name
     }
   }
 }
@@ -51,32 +52,10 @@ resource "aws_lambda_function" "page_generator" {
 
   environment {
     variables = {
-      BUCKET_NAME = aws_s3_bucket.site.bucket
-      DOMAIN      = var.domain_name
-      TABLE_NAME  = aws_dynamodb_table.quotes.name
-    }
-  }
-}
-
-# Direct Lambda trigger from DynamoDB Stream
-resource "aws_lambda_event_source_mapping" "dynamodb_stream" {
-  event_source_arn  = aws_dynamodb_table.quotes.stream_arn
-  function_name     = aws_lambda_function.page_generator.arn
-  starting_position = "LATEST"
-  batch_size        = 1
-
-  filter_criteria {
-    filter {
-      pattern = jsonencode({
-        eventName = ["INSERT", "MODIFY"],
-        dynamodb = {
-          Keys = {
-            PK = {
-              S = ["QUOTE"],
-            },
-          },
-        },
-      })
+      BUCKET_NAME  = aws_s3_bucket.site.bucket
+      DOMAIN       = var.domain_name
+      TABLE_NAME   = aws_dynamodb_table.quotes.name
+      API_BASE_URL = "https://${aws_apigatewayv2_domain_name.api.domain_name}"
     }
   }
 }

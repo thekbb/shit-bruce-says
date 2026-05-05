@@ -1,7 +1,7 @@
-import os
 import json
+import os
 import sys
-from datetime import datetime, timezone, timedelta
+from unittest.mock import Mock
 
 import boto3
 import pytest
@@ -33,32 +33,60 @@ def _mk_table():
 def env_vars():
     os.environ["AWS_REGION"] = "us-east-2"
     os.environ["TABLE_NAME"] = "bruce-quotes"
-    # reset lazy table singleton between tests
+    os.environ.pop("ALLOW_ORIGIN", None)
+    os.environ.pop("PAGE_GENERATOR_FUNCTION_NAME", None)
     if hasattr(app, "_table"):
         app._table = None
+    if hasattr(app, "_lambda_client"):
+        app._lambda_client = None
     yield
 
 
 @mock_aws
-def test_post_and_get_quotes():
+def test_post_quote_returns_metadata_and_invokes_publisher():
+    table = _mk_table()
+    os.environ["PAGE_GENERATOR_FUNCTION_NAME"] = "bruce-page-generator"
+    lambda_client = Mock()
+    app._lambda_client = lambda_client
+
+    post_event = {
+        "requestContext": {"http": {"method": "POST", "path": "/quotes"}},
+        "body": json.dumps({"quote": '"Cowabunga, Bruce!"'}),
+    }
+    response = app.handler(post_event, None)
+
+    assert response["statusCode"] == 201
+    assert response["headers"]["access-control-allow-origin"] == "*"
+    assert response["headers"]["content-type"] == "application/json"
+    assert "no-store" in response["headers"]["cache-control"]
+
+    body = json.loads(response["body"])
+    assert body["quote"] == "Cowabunga, Bruce!"
+    assert body["quoteId"]
+    assert body["url"] == f"/quotes/{body['quoteId']}/"
+
+    stored = table.get_item(Key={"PK": "QUOTE", "SK": body["quoteId"]})["Item"]
+    assert stored["quote"] == "Cowabunga, Bruce!"
+
+    lambda_client.invoke.assert_called_once()
+    invoke_kwargs = lambda_client.invoke.call_args.kwargs
+    assert invoke_kwargs["FunctionName"] == "bruce-page-generator"
+    assert invoke_kwargs["InvocationType"] == "Event"
+
+
+@mock_aws
+def test_post_quote_succeeds_when_publisher_is_not_configured():
     _mk_table()
 
     post_event = {
         "requestContext": {"http": {"method": "POST", "path": "/quotes"}},
         "body": json.dumps({"quote": "Cowabunga, Bruce!"}),
     }
-    post_resp = app.handler(post_event, None)
-    assert post_resp["statusCode"] == 201
-    assert post_resp["headers"]["access-control-allow-origin"] == "*"
-    assert post_resp["headers"]["content-type"] == "application/json"
-    assert "no-store" in post_resp["headers"]["cache-control"]
+    response = app.handler(post_event, None)
 
-    get_event = {"requestContext": {"http": {"method": "GET", "path": "/quotes"}}}
-    get_resp = app.handler(get_event, None)
-    assert get_resp["statusCode"] == 200
-    body = json.loads(get_resp["body"])
-    assert len(body["items"]) == 1
-    assert body["items"][0]["quote"] == "Cowabunga, Bruce!"
+    assert response["statusCode"] == 201
+    body = json.loads(response["body"])
+    assert body["quote"] == "Cowabunga, Bruce!"
 
 
 @mock_aws
@@ -78,21 +106,17 @@ def test_reject_sqlish():
 def test_length_validation():
     _mk_table()
 
-    # Too short
-    ev_short = {
+    short_event = {
         "requestContext": {"http": {"method": "POST", "path": "/quotes"}},
-        "body": json.dumps({"quote": "hey"}),  # len=3 < 5
+        "body": json.dumps({"quote": "hey"}),
     }
-    r1 = app.handler(ev_short, None)
-    assert r1["statusCode"] == 400
+    assert app.handler(short_event, None)["statusCode"] == 400
 
-    # Too long
-    ev_long = {
+    long_event = {
         "requestContext": {"http": {"method": "POST", "path": "/quotes"}},
         "body": json.dumps({"quote": "x" * 301}),
     }
-    r2 = app.handler(ev_long, None)
-    assert r2["statusCode"] == 400
+    assert app.handler(long_event, None)["statusCode"] == 400
 
 
 @mock_aws
@@ -103,9 +127,9 @@ def test_bad_json_body():
         "requestContext": {"http": {"method": "POST", "path": "/quotes"}},
         "body": "{not json}",
     }
-    r = app.handler(ev, None)
-    assert r["statusCode"] == 400
-    assert "Invalid JSON" in json.loads(r["body"])["error"]
+    response = app.handler(ev, None)
+    assert response["statusCode"] == 400
+    assert "Invalid JSON" in json.loads(response["body"])["error"]
 
 
 @mock_aws
@@ -113,13 +137,13 @@ def test_options_cors_preflight():
     _mk_table()
 
     ev = {"requestContext": {"http": {"method": "OPTIONS", "path": "/quotes"}}}
-    r = app.handler(ev, None)
-    assert r["statusCode"] == 204
-    h = r["headers"]
-    assert h["access-control-allow-origin"] == "*"
-    assert "GET" in h["access-control-allow-methods"]
-    assert "POST" in h["access-control-allow-methods"]
-    assert "content-type" in h["access-control-allow-headers"]
+    response = app.handler(ev, None)
+    assert response["statusCode"] == 204
+    headers = response["headers"]
+    assert headers["access-control-allow-origin"] == "*"
+    assert "POST" in headers["access-control-allow-methods"]
+    assert "OPTIONS" in headers["access-control-allow-methods"]
+    assert "content-type" in headers["access-control-allow-headers"]
 
 
 @mock_aws
@@ -127,64 +151,16 @@ def test_not_found_route():
     _mk_table()
 
     ev = {"requestContext": {"http": {"method": "GET", "path": "/nope"}}}
-    r = app.handler(ev, None)
-    assert r["statusCode"] == 404
-
-
-@mock_aws
-def test_pagination_cursor_descending_order():
-    # Prepare three items with ascending SKs; query uses descending (newest first)
-    tbl = _mk_table()
-
-    now = datetime.now(timezone.utc)
-    def put(sk_suffix: str, text: str, dt):
-        item = {
-            "PK": "QUOTE",
-            # 26-char ULID-ish; using valid Base32 chars '0','1','2' is fine for lexicographic tests
-            "SK": "0000000000000000000000000" + sk_suffix,  # 25 zeros + suffix -> 26 chars total
-            "quote": text,
-            "createdAt": dt.isoformat()
-        }
-        tbl.put_item(Item=item)
-
-    put("0", "first",  now - timedelta(seconds=2))
-    put("1", "second", now - timedelta(seconds=1))
-    put("2", "third",  now)
-
-    # Page 1: limit=2 -> expect "third","second"
-    ev1 = {
-        "requestContext": {"http": {"method": "GET", "path": "/quotes"}},
-        "queryStringParameters": {"limit": "2"},
-    }
-    r1 = app.handler(ev1, None)
-    assert r1["statusCode"] == 200
-    b1 = json.loads(r1["body"])
-    assert [it["quote"] for it in b1["items"]] == ["third", "second"]
-    assert b1["cursor"] is not None
-
-    # Page 2: use cursor -> expect "first"
-    ev2 = {
-        "requestContext": {"http": {"method": "GET", "path": "/quotes"}},
-        "queryStringParameters": {"cursor": json.dumps(b1["cursor"])},
-    }
-    r2 = app.handler(ev2, None)
-    assert r2["statusCode"] == 200
-    b2 = json.loads(r2["body"])
-    assert [it["quote"] for it in b2["items"]] == ["first"]
+    response = app.handler(ev, None)
+    assert response["statusCode"] == 404
 
 
 @mock_aws
 def test_cors_origin_override():
-    """Test that CORS origin can be overridden via environment variable."""
     _mk_table()
-
-    # Test with environment variable set (production scenario)
     os.environ["ALLOW_ORIGIN"] = "https://shitbrucesays.co.uk"
 
     ev = {"requestContext": {"http": {"method": "OPTIONS", "path": "/quotes"}}}
-    r = app.handler(ev, None)
-    assert r["statusCode"] == 204
-    assert r["headers"]["access-control-allow-origin"] == "https://shitbrucesays.co.uk"
-
-    # Clean up
-    del os.environ["ALLOW_ORIGIN"]
+    response = app.handler(ev, None)
+    assert response["statusCode"] == 204
+    assert response["headers"]["access-control-allow-origin"] == "https://shitbrucesays.co.uk"

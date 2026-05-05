@@ -11,20 +11,28 @@ resource "aws_iam_role" "lambda_exec" {
   })
 }
 
-# Minimal DDB access (PutItem, Query). Add /index/* if you later use GSIs.
+# Minimal write path access for quote submissions.
 resource "aws_iam_policy" "ddb_access" {
   name        = "${local.name}-ddb-access"
   description = "Allow Lambda to access DynamoDB table"
   policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [{
-      Effect = "Allow"
-      Action = [
-        "dynamodb:PutItem",
-        "dynamodb:Query",
-      ]
-      Resource = aws_dynamodb_table.quotes.arn
-    }]
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "dynamodb:PutItem",
+        ]
+        Resource = aws_dynamodb_table.quotes.arn
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "lambda:InvokeFunction",
+        ]
+        Resource = aws_lambda_function.page_generator.arn
+      },
+    ]
   })
 }
 
@@ -63,17 +71,9 @@ resource "aws_iam_policy" "page_generator_access" {
       {
         Effect = "Allow"
         Action = [
-          "dynamodb:DescribeStream",
-          "dynamodb:GetItem",
-          "dynamodb:GetRecords",
-          "dynamodb:GetShardIterator",
-          "dynamodb:ListStreams",
           "dynamodb:Query",
         ]
-        Resource = [
-          aws_dynamodb_table.quotes.arn,
-          "${aws_dynamodb_table.quotes.arn}/*",
-        ]
+        Resource = aws_dynamodb_table.quotes.arn
       },
       {
         Effect = "Allow"

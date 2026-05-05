@@ -52,20 +52,20 @@ terraform init
 terraform apply
 ```
 
-Deploys to AWS: Lambda (API + page generator), DynamoDB, S3, CloudFront, Route53.
+Deploys to AWS: submission Lambda, publisher Lambda, DynamoDB, S3, CloudFront, Route53.
 
 ## How It Works
 
 ### Data Flow
 
 1. User submits quote → API Gateway → Lambda → DynamoDB
-2. DynamoDB Stream → Lambda (page generator)
-3. Lambda generates quote page + SEO page + sitemap → S3
-4. CloudFront serves everything
+2. Lambda writes the quote to DynamoDB and asynchronously invokes the publisher
+3. Publisher Lambda rebuilds `index.html`, quote pages, and `sitemap.xml` in S3
+4. CloudFront serves the generated static site
 
 ### Quote Pages
 
-Each quote gets its own static HTML page at `/quote/{id}.html` with proper Open Graph tags for social media previews. These pages redirect humans to the main app but let social media crawlers read the metadata.
+Each quote gets its own static HTML page at `/quotes/{id}/` with canonical URLs, proper Open Graph tags, and Twitter card metadata. These are real pages for both humans and crawlers.
 
 ### Storage
 

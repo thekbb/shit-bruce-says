@@ -40,9 +40,9 @@
   <meta property="twitter:image" content="https://shitbrucesays.co.uk/favicon.svg">
 
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="canonical" href="https://shitbrucesays.co.uk/">
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <script src="https://unpkg.com/infinite-scroll@4/dist/infinite-scroll.pkgd.min.js"></script>
   <script src="app.js" defer></script>
   <title>Shit Bruce Says</title>
 </head>
@@ -64,11 +64,12 @@
           <small id="quote-help" class="visually-hidden">Enter a memorable quote from Bruce (5-300 characters)</small>
           <input type="submit" value="Submit Quote"/>
         </form>
+        <p id="form-status" class="form-status" aria-live="polite"></p>
       </section>
 
       <section class="quotes" id="quotes" aria-label="Bruce quotes" role="feed">
         <h2 class="visually-hidden">All Quotes</h2>
-        <!-- Quotes will be loaded here -->
+        <p class="empty-state">No quotes yet. Be the first to add one.</p>
       </section>
     </main>
   </div>
