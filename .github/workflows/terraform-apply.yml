@@ -66,6 +66,16 @@ jobs:
         with:
           terraform_version: latest
 
+      - name: Setup Python
+        if: steps.changes.outputs.should_apply == 'true'
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.x'
+
+      - name: Install Python Dependencies
+        if: steps.changes.outputs.should_apply == 'true'
+        run: python -m pip install --upgrade pip boto3
+
       - name: Terraform Init
         if: steps.changes.outputs.should_apply == 'true'
         run: terraform init
@@ -83,6 +93,14 @@ jobs:
         id: apply
         if: steps.changes.outputs.should_apply == 'true'
         run: terraform apply -auto-approve -input=false
+
+      - name: Republish Static Site
+        if: steps.changes.outputs.should_apply == 'true' && steps.apply.outcome == 'success'
+        run: |
+          FUNCTION_NAME="$(terraform output -raw page_generator_function_name)"
+          python tools/invoke_page_generator.py \
+            --region "${AWS_REGION}" \
+            --function-name "${FUNCTION_NAME}"
 
       - name: Skip Apply Summary
         if: steps.changes.outputs.should_apply != 'true'

@@ -28,6 +28,11 @@ output "lambda_artifacts_bucket" {
   value       = aws_s3_bucket.lambda_artifacts.bucket
 }
 
+output "page_generator_function_name" {
+  description = "Name of the Lambda function that republishes the static site"
+  value       = aws_lambda_function.page_generator.function_name
+}
+
 output "github_terraform_plan_role_arn" {
   description = "ARN for GitHub Actions Terraform Plan role (read-only)"
   value       = aws_iam_role.github_terraform_plan.arn
