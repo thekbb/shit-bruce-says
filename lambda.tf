@@ -22,9 +22,9 @@ resource "aws_lambda_function" "api" {
 
   environment {
     variables = {
-      TABLE_NAME                    = aws_dynamodb_table.quotes.name
-      ALLOW_ORIGIN                  = var.allow_origin
-      PAGE_GENERATOR_FUNCTION_NAME  = aws_lambda_function.page_generator.function_name
+      TABLE_NAME                   = aws_dynamodb_table.quotes.name
+      ALLOW_ORIGIN                 = var.allow_origin
+      PAGE_GENERATOR_FUNCTION_NAME = aws_lambda_function.page_generator.function_name
     }
   }
 }
