@@ -30,6 +30,12 @@ resource "aws_cloudfront_function" "www_redirect" {
         };
       }
 
+      if (request.uri.endsWith('/')) {
+        request.uri = request.uri + 'index.html';
+      } else if (!request.uri.includes('.')) {
+        request.uri = request.uri + '/index.html';
+      }
+
       return request;
     }
   EOT

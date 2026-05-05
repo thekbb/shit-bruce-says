@@ -10,7 +10,7 @@ dependencies = []
 dev = [
   "boto3",
   "boto3-stubs[dynamodb]",
-  "moto[dynamodb]",
+  "moto[dynamodb,s3]",
   "pytest",
   "pytest-cov",
   "mypy",

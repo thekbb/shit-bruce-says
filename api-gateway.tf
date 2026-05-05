@@ -1,10 +1,5 @@
 locals {
   api_routes = {
-    get = {
-      method         = "GET"
-      throttle_burst = 50 # Allow bursts for pagination/scrolling
-      throttle_rate  = 20 # 20 req/sec for viewing quotes
-    }
     post = {
       method         = "POST"
       throttle_burst = 5 # Low burst for submissions
@@ -24,7 +19,7 @@ resource "aws_apigatewayv2_api" "http_api" {
 
   cors_configuration {
     allow_origins  = [var.allow_origin] # e.g., https://shitbrucesays.co.uk (prod) or * (dev)
-    allow_methods  = ["GET", "POST", "OPTIONS"]
+    allow_methods  = ["POST", "OPTIONS"]
     allow_headers  = ["content-type"]
     expose_headers = ["content-type"]
     max_age        = 3600

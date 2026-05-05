@@ -1,13 +1,4 @@
 User-agent: *
 Allow: /
-Allow: /seo.html
 
 Sitemap: https://shitbrucesays.co.uk/sitemap.xml
-
-User-agent: Googlebot
-Allow: /
-Allow: /seo.html
-
-User-agent: Bingbot
-Allow: /
-Allow: /seo.html
