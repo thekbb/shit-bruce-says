@@ -28,6 +28,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@d979d5b3a71173a29b74b5b88418bfda9437d885 # v6.1.1
@@ -36,6 +38,6 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Terraform Plan
-        uses: thekbb/terraform-plan-commenter-action@main
+        uses: thekbb/terraform-plan-commenter-action@f26d4b3558063e7e0372bdaa5445187bc99f0fc9 # v2.0.0
         with:
           terraform-version: '1.14.3'
