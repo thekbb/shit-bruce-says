@@ -26,6 +26,7 @@ web/index.html
 web/sitemap.xml
 web/seo.html
 web/quote/
+web/quotes/
 
 # terrorform
 .terraform/
@@ -37,6 +38,8 @@ crash.log
 
 .sam-local.out
 .sam-local.pid
+.local-publisher.out
+.local-publisher.pid
 .dist/
 
 # GET OFF MY LAWN
