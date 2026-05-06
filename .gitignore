@@ -24,8 +24,6 @@ build/
 coverage.xml
 web/index.html
 web/sitemap.xml
-web/seo.html
-web/quote/
 web/quotes/
 
 # terrorform
