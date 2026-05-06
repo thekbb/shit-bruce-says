@@ -43,6 +43,8 @@ def env_vars():
     os.environ["BUCKET_NAME"] = "bruce-quotes-site-test"
     os.environ["DOMAIN"] = "shitbrucesays.co.uk"
     os.environ["API_BASE_URL"] = "https://api.shitbrucesays.co.uk"
+    os.environ.pop("LOCAL_SITE_DIR", None)
+    os.environ.pop("SITE_BASE_URL", None)
     if hasattr(page_generator, "_s3_client"):
         page_generator._s3_client = None
     if hasattr(page_generator, "_dynamodb_resource"):
@@ -103,3 +105,31 @@ def test_publish_site_handles_empty_database():
     sitemap = s3.get_object(Bucket=os.environ["BUCKET_NAME"], Key="sitemap.xml")
     sitemap_body = sitemap["Body"].read().decode("utf-8")
     assert "<loc>https://shitbrucesays.co.uk/</loc>" in sitemap_body
+
+
+@mock_aws
+def test_publish_site_can_write_to_local_directory(tmp_path):
+    table = _create_table()
+    table.put_item(
+        Item={
+            "PK": "QUOTE",
+            "SK": "01JLOCAL1234567890ABCDEF0",
+            "quote": "Local Bruce quote",
+            "createdAt": "2026-05-05T12:00:00+00:00",
+        }
+    )
+    os.environ["LOCAL_SITE_DIR"] = str(tmp_path)
+    os.environ["SITE_BASE_URL"] = "http://localhost:8080"
+
+    result = page_generator.publish_site()
+
+    assert result["quoteCount"] == 1
+    homepage = (tmp_path / "index.html").read_text(encoding="utf-8")
+    quote_page = (tmp_path / "quotes" / "01JLOCAL1234567890ABCDEF0" / "index.html").read_text(encoding="utf-8")
+    sitemap = (tmp_path / "sitemap.xml").read_text(encoding="utf-8")
+
+    assert "Local Bruce quote" in homepage
+    assert 'meta name="api-base" content="https://api.shitbrucesays.co.uk"' in homepage
+    assert 'href="http://localhost:8080/quotes/01JLOCAL1234567890ABCDEF0/"' in homepage
+    assert "Back to all quotes" in quote_page
+    assert "<loc>http://localhost:8080/quotes/01JLOCAL1234567890ABCDEF0/</loc>" in sitemap

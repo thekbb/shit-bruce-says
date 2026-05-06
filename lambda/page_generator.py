@@ -1,7 +1,9 @@
 import html
 import json
 import os
+import shutil
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 
 import boto3
@@ -30,6 +32,13 @@ def get_domain() -> str:
     return os.environ["DOMAIN"]
 
 
+def get_site_base_url() -> str:
+    base_url = os.environ.get("SITE_BASE_URL", "").rstrip("/")
+    if base_url:
+        return base_url
+    return f"https://{get_domain()}"
+
+
 def get_api_base_url() -> str:
     return os.environ.get("API_BASE_URL", "").rstrip("/")
 
@@ -40,6 +49,13 @@ def get_table_name() -> str:
 
 def get_region() -> str:
     return os.environ.get("AWS_REGION", "us-east-2")
+
+
+def get_local_site_dir() -> Path | None:
+    local_site_dir = os.environ.get("LOCAL_SITE_DIR", "").strip()
+    if not local_site_dir:
+        return None
+    return Path(local_site_dir)
 
 
 def get_s3_client() -> Any:
@@ -83,11 +99,11 @@ def format_date(iso_string: str) -> str:
 
 
 def quote_url(quote_id: str) -> str:
-    return f"https://{get_domain()}/quotes/{quote_id}/"
+    return f"{get_site_base_url()}/quotes/{quote_id}/"
 
 
 def root_url() -> str:
-    return f"https://{get_domain()}/"
+    return f"{get_site_base_url()}/"
 
 
 def analytics_script() -> str:
@@ -156,7 +172,7 @@ def render_head(
     escaped_description = escape_html(description)
     escaped_canonical = escape_html(canonical_url)
     api_base_url = escape_html(get_api_base_url())
-    image_url = escape_html(f"https://{get_domain()}/favicon.svg")
+    image_url = escape_html(f"{get_site_base_url()}/favicon.svg")
     return f"""<head>
   {analytics_script()}
   <meta charset="UTF-8">
@@ -348,6 +364,13 @@ def render_sitemap(quotes: list[dict[str, str]]) -> str:
 
 
 def put_html(key: str, body: str, cache_control: str = HTML_CACHE_CONTROL) -> None:
+    local_site_dir = get_local_site_dir()
+    if local_site_dir is not None:
+        output_path = local_site_dir / key
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_text(body, encoding="utf-8")
+        return
+
     get_s3_client().put_object(
         Bucket=get_bucket_name(),
         Key=key,
@@ -358,6 +381,13 @@ def put_html(key: str, body: str, cache_control: str = HTML_CACHE_CONTROL) -> No
 
 
 def put_xml(key: str, body: str) -> None:
+    local_site_dir = get_local_site_dir()
+    if local_site_dir is not None:
+        output_path = local_site_dir / key
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_text(body, encoding="utf-8")
+        return
+
     get_s3_client().put_object(
         Bucket=get_bucket_name(),
         Key=key,
@@ -387,6 +417,14 @@ def fetch_all_quotes() -> list[dict[str, str]]:
 
 def publish_site() -> dict[str, Any]:
     quotes = fetch_all_quotes()
+    local_site_dir = get_local_site_dir()
+
+    if local_site_dir is not None:
+        shutil.rmtree(local_site_dir / "quotes", ignore_errors=True)
+        shutil.rmtree(local_site_dir / "quote", ignore_errors=True)
+        legacy_seo = local_site_dir / "seo.html"
+        if legacy_seo.exists():
+            legacy_seo.unlink()
 
     put_html("index.html", render_homepage(quotes))
     for quote in quotes:

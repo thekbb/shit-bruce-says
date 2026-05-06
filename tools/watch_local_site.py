@@ -5,7 +5,9 @@ from __future__ import annotations
 import argparse
 import os
 import sys
+import time
 from pathlib import Path
+from typing import Any
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -16,7 +18,7 @@ import page_generator  # noqa: E402
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Render the local static site from DynamoDB Local using the real page generator."
+        description="Watch DynamoDB Local and republish the local static site when quotes change."
     )
     parser.add_argument("--api", required=True, help="Local API base URL, e.g. http://127.0.0.1:3000")
     parser.add_argument(
@@ -39,6 +41,12 @@ def parse_args() -> argparse.Namespace:
         default="web",
         help="Directory to write generated static files into (default: web)",
     )
+    parser.add_argument(
+        "--interval",
+        type=float,
+        default=2.0,
+        help="Polling interval in seconds (default: 2.0)",
+    )
     return parser.parse_args()
 
 
@@ -56,15 +64,36 @@ def configure_environment(args: argparse.Namespace) -> None:
     page_generator._s3_client = None
 
 
+def quote_fingerprint(quotes: list[dict[str, Any]]) -> tuple[tuple[str, str, str], ...]:
+    return tuple(
+        (
+            str(quote.get("SK", "")),
+            str(quote.get("createdAt", "")),
+            str(quote.get("quote", "")),
+        )
+        for quote in quotes
+    )
+
+
 def main() -> int:
     args = parse_args()
     configure_environment(args)
-    result = page_generator.publish_site()
-    print(
-        f"Rendered local static site into {args.output_dir} "
-        f"from {args.table_name} at {args.ddb_endpoint} ({result['quoteCount']} quotes)"
-    )
-    return 0
+
+    last_fingerprint: tuple[tuple[str, str, str], ...] | None = None
+    print(f"Watching {args.table_name} at {args.ddb_endpoint} and publishing into {args.output_dir}")
+
+    try:
+        while True:
+            quotes = page_generator.fetch_all_quotes()
+            current_fingerprint = quote_fingerprint(quotes)
+            if current_fingerprint != last_fingerprint:
+                result = page_generator.publish_site()
+                last_fingerprint = current_fingerprint
+                print(f"Published local static site ({result['quoteCount']} quotes)")
+            time.sleep(args.interval)
+    except KeyboardInterrupt:
+        print("Stopped local site watcher")
+        return 0
 
 
 if __name__ == "__main__":
