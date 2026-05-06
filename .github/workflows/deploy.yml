@@ -20,6 +20,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: main
+          persist-credentials: false
 
       - name: Set up Python
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
@@ -61,9 +62,13 @@ jobs:
 
       - name: Create Job Summary
         if: always()
+        env:
+          JOB_STATUS: ${{ job.status }}
         run: |
-          echo "## Deploy Results" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Status:** ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Ref:** main" >> $GITHUB_STEP_SUMMARY
-          echo "**Commit:** $(git rev-parse HEAD)" >> $GITHUB_STEP_SUMMARY
+          {
+            echo "## Deploy Results"
+            echo
+            echo "**Status:** $JOB_STATUS"
+            echo "**Ref:** main"
+            echo "**Commit:** $(git rev-parse HEAD)"
+          } >> "$GITHUB_STEP_SUMMARY"
