@@ -47,12 +47,23 @@ Tests use moto to mock AWS services. No credentials needed.
 
 ## Deployment
 
-```bash
-terraform init
-terraform apply
-```
+The normal production release path is the manual `Deploy` GitHub Actions workflow.
 
-Deploys to AWS: submission Lambda, publisher Lambda, DynamoDB, S3, CloudFront, Route53.
+Release flow:
+
+1. Open a pull request to `main`.
+2. Let `CI`, `Terraform Plan`, and the IAM wildcard review jobs pass.
+3. Merge to `main`.
+4. Run the `Deploy` workflow from GitHub Actions.
+
+The `Deploy` workflow:
+
+- checks out `main`
+- publishes Lambda artifacts
+- runs `terraform apply`
+- republishes the static site from DynamoDB
+
+The infrastructure deployed to AWS is: submission Lambda, publisher Lambda, DynamoDB, S3, CloudFront, and Route53.
 
 ## How It Works
 
