@@ -28,18 +28,12 @@ jobs:
         uses: actions/checkout@v6
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
-          fetch-depth: 1
+          fetch-depth: 2
 
-      - name: Download Deploy Context
-        uses: dawidd6/action-download-artifact@v21
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          run_id: ${{ github.event.workflow_run.id }}
-          name: deploy-context
-
-      - name: Read Deploy Context
+      - name: Compute Deploy Context
         id: changes
         run: |
+          python tools/compute_deploy_context.py --output deploy-context.json
           python - <<'PY'
           import json
           import os
