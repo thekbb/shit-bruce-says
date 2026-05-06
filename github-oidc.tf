@@ -88,7 +88,7 @@ resource "aws_iam_role_policy" "github_terraform_plan" {
 }
 
 # Terraform Apply Role (Read-Write)
-# Used by terraform-apply.yml workflow on main branch pushes
+# Used by the manual deploy.yml workflow when dispatched from main
 resource "aws_iam_role" "github_terraform_apply" {
   name = "${local.name}-github-terraform-apply"
 
@@ -105,7 +105,7 @@ resource "aws_iam_role" "github_terraform_apply" {
           "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
         }
         StringLike = {
-          # Only allow from your repo and main branch
+          # Only allow tokens issued for this repo's main branch
           "token.actions.githubusercontent.com:sub" = "repo:${var.github_repo}:ref:refs/heads/main"
         }
       }
