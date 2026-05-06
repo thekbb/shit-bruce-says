@@ -55,6 +55,55 @@ header .tagline {
   min-height: 1.25rem;
   margin: 0;
   color: #666;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.form-status.is-visible {
+  opacity: 1;
+}
+
+.form-status.is-loading::before {
+  content: "";
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 999px;
+  border: 2px solid #ccc;
+  border-top-color: #666;
+  animation: form-status-spin 0.7s linear infinite;
+}
+
+.form-status.is-error {
+  color: #b00;
+}
+
+.form-status.is-success {
+  color: #666;
+}
+
+.form-status.is-ephemeral {
+  animation: status-fade-out 4s ease forwards;
+}
+
+@keyframes form-status-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes status-fade-out {
+  0%,
+  70% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+  }
 }
 
 #quote-form {
