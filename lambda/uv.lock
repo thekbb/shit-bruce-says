@@ -69,7 +69,7 @@ source = { editable = "." }
 dev = [
     { name = "boto3" },
     { name = "boto3-stubs", extra = ["dynamodb"] },
-    { name = "moto", extra = ["dynamodb"] },
+    { name = "moto", extra = ["dynamodb", "s3"] },
     { name = "mypy" },
     { name = "pytest" },
     { name = "pytest-cov" },
@@ -79,7 +79,7 @@ dev = [
 requires-dist = [
     { name = "boto3", marker = "extra == 'dev'" },
     { name = "boto3-stubs", extras = ["dynamodb"], marker = "extra == 'dev'" },
-    { name = "moto", extras = ["dynamodb"], marker = "extra == 'dev'" },
+    { name = "moto", extras = ["dynamodb", "s3"], marker = "extra == 'dev'" },
     { name = "mypy", marker = "extra == 'dev'" },
     { name = "pytest", marker = "extra == 'dev'" },
     { name = "pytest-cov", marker = "extra == 'dev'" },
@@ -391,6 +391,10 @@ wheels = [
 dynamodb = [
     { name = "docker" },
     { name = "py-partiql-parser" },
+]
+s3 = [
+    { name = "py-partiql-parser" },
+    { name = "pyyaml" },
 ]
 
 [[package]]

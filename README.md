@@ -19,9 +19,16 @@ Collects memorable quotes from Bruce. Anyone can add quotes via the web UI.
 make dev
 ```
 
-This starts DynamoDB Local, nginx (serving the web UI), and SAM (Lambda API) in the background.
+This starts:
+
+- DynamoDB Local
+- nginx serving the generated static site from `web/`
+- SAM running the submission API locally
+- a local publisher watcher that rebuilds `web/index.html`, `web/quotes/...`, and `web/sitemap.xml` from DynamoDB Local
 
 Open http://localhost:8080 to use the app.
+
+When you submit a quote locally, the API writes it to DynamoDB Local and the local publisher updates the static files within a couple of seconds, matching production much more closely.
 
 ### Available Commands
 
@@ -30,6 +37,7 @@ make dev       # Start everything (one command)
 make dev-fg    # Same, but SAM runs in foreground
 make stop      # Stop everything
 make logs      # View Docker logs
+make render    # One-shot rebuild of the local static site
 make test      # Run Lambda tests
 ```
 

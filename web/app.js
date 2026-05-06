@@ -80,12 +80,34 @@ function createQuoteElement(quote) {
   return article;
 }
 
-function setFormStatus(message, isError = false) {
+function clearFormStatus() {
   const status = document.getElementById("form-status");
   if (!status) return;
 
+  status.textContent = "";
+  status.classList.remove("is-visible", "is-loading", "is-error", "is-success", "is-ephemeral");
+}
+
+function setFormStatus(message, { state = "info", ephemeral = false } = {}) {
+  const status = document.getElementById("form-status");
+  if (!status) return;
+
+  clearFormStatus();
   status.textContent = message;
-  status.style.color = isError ? "#b00" : "#666";
+  status.classList.add("is-visible");
+
+  if (state === "loading") {
+    status.classList.add("is-loading");
+  } else if (state === "error") {
+    status.classList.add("is-error");
+  } else if (state === "success") {
+    status.classList.add("is-success");
+  }
+
+  if (ephemeral) {
+    void status.offsetWidth;
+    status.classList.add("is-ephemeral");
+  }
 }
 
 function removeEmptyState() {
@@ -111,16 +133,19 @@ async function handleFormSubmit(event) {
 
   input.disabled = true;
   submit.disabled = true;
-  setFormStatus("Submitting quote...");
+  setFormStatus("Submitting quote...", { state: "loading" });
 
   try {
     const created = await createQuote(quote);
     input.value = "";
     prependQuote(created);
-    setFormStatus("Quote submitted. The static pages will catch up within a few seconds.");
+    setFormStatus("Quote submitted. The static pages will catch up within a few seconds.", {
+      state: "success",
+      ephemeral: true,
+    });
     window.scrollTo({ top: 0, behavior: "smooth" });
   } catch (err) {
-    setFormStatus(err.message || "Failed to add quote.", true);
+    setFormStatus(err.message || "Failed to add quote.", { state: "error" });
     console.error(err);
   } finally {
     input.disabled = false;
@@ -232,6 +257,10 @@ function handleShareButtonClick(event) {
 
 function initializeApp() {
   document.getElementById("quote-form")?.addEventListener("submit", handleFormSubmit);
+  document.getElementById("form-status")?.addEventListener("animationend", (event) => {
+    if (event.animationName !== "status-fade-out") return;
+    clearFormStatus();
+  });
   document.addEventListener("click", handleShareButtonClick);
   tryHighlightHash();
 }
