@@ -13,6 +13,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Expand IAM Wildcards
-        uses: thekbb/expand-iam-wildcards@6a258beccb07c77eb33926156d4eb5154f57e1cb # v1.2.6
+        uses: thekbb/expand-iam-wildcards@3b2844e1c5431ae7ec639df6e82f47daff96029b # v1.3.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
