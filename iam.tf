@@ -30,6 +30,7 @@ resource "aws_iam_policy" "ddb_access" {
         Effect = "Allow"
         Action = [
           "lambda:InvokeFunction",
+          "sqs:?etQueueAttributes",
         ]
         Resource = aws_lambda_function.page_generator.arn
       },
