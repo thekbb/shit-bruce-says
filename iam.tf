@@ -21,7 +21,7 @@ resource "aws_iam_policy" "ddb_access" {
       {
         Effect = "Allow"
         Action = [
-          "dynamodb:PutItem",
+          "dynamodb:Put*",
           "sqs:?etQueue*ttributes",
         ]
         Resource = aws_dynamodb_table.quotes.arn
